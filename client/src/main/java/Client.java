@@ -229,9 +229,6 @@ public final class Client {
 
             if (module != null) {
                 try {
-                    module.meta = meta;
-                    module.server = server;
-
                     Toml moduleTable = config.getTable(moduleName);
                     Map<String, java.lang.Object> moduleConfig;
                     if (moduleTable != null) {
@@ -240,7 +237,7 @@ public final class Client {
                         moduleConfig = new HashMap<String, java.lang.Object>();
                     }
 
-                    module.synchronizedSetup(moduleConfig);
+                    module.synchronizedSetup(moduleConfig, meta, server);
                 } catch (java.lang.Exception e) {
                     ErrorHelper.printException("`setup()` for `Module` from", moduleFile, e);
                 }
