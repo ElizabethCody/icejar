@@ -1,0 +1,35 @@
+plugins {
+    id 'application'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.zeroc:ice:3.7.7'
+    implementation 'com.moandjiezana.toml:toml4j:0.7.2'
+
+    implementation project(':ice')
+    implementation project(':interfaces')
+}
+
+application {
+    mainClass = 'icejar.ClientManager'
+}
+
+jar {
+    archiveFileName = 'MumbleIce.jar'
+
+    dependsOn ':interfaces:jar'
+
+    duplicatesStrategy = 'exclude'
+
+    manifest {
+        attributes "Main-Class": "icejar.ClientManager"
+    }
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}

@@ -1,0 +1,30 @@
+plugins {
+    id 'java-library'
+    id 'com.zeroc.gradle.ice-builder.slice' version '1.5.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api 'com.zeroc:ice:3.7.7'
+}
+
+slice {
+    java {
+        files = [file('./Murmur.ice')]
+    }
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir './build/generated-src/Murmur'
+        }
+    }
+}
+
+task javadoc(type: Javadoc, overwrite: true) {
+    failOnError = false
+}

@@ -1,0 +1,21 @@
+plugins {
+    id 'java-library'
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api project(':ice')
+}
+
+jar {
+    dependsOn ':ice:jar'
+
+    archiveFileName = 'MumbleIceInterfaces.jar'
+
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+}
