@@ -31,7 +31,8 @@ public final class ClientManager {
 
     // server config field names
     private static final String ICE_ARGS_VAR = "ice_args";
-    private static final String ICE_PROXY_STRING_VAR = "ice_proxy_string";
+    private static final String ICE_HOST_VAR = "ice_host";
+    private static final String ICE_PORT_VAR = "ice_port";
     private static final String ICE_SECRET_VAR = "ice_secret";
     private static final String ENABLED_MODULES_VAR = "enabled_modules";
     private static final String SERVER_NAME_VAR = "server_name";
@@ -59,8 +60,8 @@ public final class ClientManager {
 
         try {
             WatchService watcher = FileSystems.getDefault().newWatchService();
-            serverConfigDir.toPath().register(watcher, ENTRY_MODIFY, ENTRY_DELETE);
-            moduleDir.toPath().register(watcher, ENTRY_MODIFY, ENTRY_DELETE);
+            serverConfigDir.toPath().register(watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+            moduleDir.toPath().register(watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
 
             WatchKey key;
             while ((key = watcher.take()) != null) {
@@ -120,7 +121,8 @@ public final class ClientManager {
                     }
 
                     String[] iceArgs = config.getList(ICE_ARGS_VAR).toArray(new String[0]);
-                    String iceProxyString = config.getString(ICE_PROXY_STRING_VAR);
+                    String iceHost = config.getString(ICE_HOST_VAR);
+                    int icePort = config.getLong(ICE_PORT_VAR).intValue();
 
                     Optional<String> iceSecret = Optional.ofNullable(config.getString(ICE_SECRET_VAR));
 
@@ -146,7 +148,7 @@ public final class ClientManager {
                     Optional<Long> serverID = Optional.ofNullable(config.getLong(SERVER_ID_VAR));
 
                     Client newClient = new Client(
-                            changedServerConfigFile, iceArgs, iceProxyString,
+                            changedServerConfigFile, iceArgs, iceHost, icePort,
                             iceSecret, enabledModules, serverName, serverID,
                             config);
 

@@ -16,7 +16,6 @@ import Murmur.*;
 
 // Ice client for a single virtual mumble server
 public final class Client {
-    private final String ICE_PROXY_STRING_PREFIX = "Meta:default ";
     private final String ICE_CONTEXT_SECRET_VAR = "secret";
     private final String SERVER_NAME_VAR = "registerName";
 
@@ -26,24 +25,26 @@ public final class Client {
     private final int MAX_RECONNECT_DELAY = 60000;
     private int reconnectDelay = MIN_RECONNECT_DELAY;
 
-    private String iceProxyString;
+    private String iceHost;
+    private int icePort;
     private String[] iceArgs;
 
     private Optional<String> serverName = Optional.empty();
     private Optional<Long> serverID = Optional.empty();
-    private volatile Toml config;
+    private Toml config;
 
     private Map<File, Module> enabledModules = new HashMap<File, Module>();
 
     private Communicator communicator;
-    private volatile MetaPrx meta;
-    private volatile Optional<ServerPrx> server;
+    private ObjectAdapter adapter;
+    private MetaPrx meta;
+    private Optional<ServerPrx> server;
 
     private Thread connectThread;
 
 
     protected Client(
-            File configFile, String[] iceArgs, String iceProxyString,
+            File configFile, String[] iceArgs, String iceHost, int icePort,
             Optional<String> iceSecret, Map<File, Module> enabledModules,
             Optional<String> serverName, Optional<Long> serverID,
             Toml config) throws java.lang.Exception
@@ -54,7 +55,8 @@ public final class Client {
             .append("`");
         System.out.println(statusMsg);
 
-        this.iceProxyString = ICE_PROXY_STRING_PREFIX + iceProxyString;
+        this.iceHost = iceHost;
+        this.icePort = icePort;
         this.iceArgs = iceArgs;
 
         this.configFile = configFile;
@@ -125,7 +127,20 @@ public final class Client {
     }
 
     private void connect() throws java.lang.Exception {
-        meta = MetaPrx.checkedCast(communicator.stringToProxy(iceProxyString));
+        String proxyString = new StringBuilder()
+            .append("Meta:default -h ")
+            .append(iceHost)
+            .append(" -p ")
+            .append(icePort)
+            .toString();
+        meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
+
+        String adapterString = new StringBuilder()
+            .append("tcp -h ")
+            .append(iceHost)
+            .toString();
+        adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
+        adapter.activate();
 
         Connection connection = meta.ice_getConnection();
         // Set active connection management parameters
@@ -198,7 +213,8 @@ public final class Client {
         }
 
         unsetCloseCallback();
-        meta.ice_getConnection().close(ConnectionClose.Forcefully);
+        meta.ice_getConnection().close(ConnectionClose.Gracefully);
+        adapter.destroy();
         connectThread.interrupt();
 
         startReconnectThread();
@@ -237,7 +253,7 @@ public final class Client {
                         moduleConfig = new HashMap<String, java.lang.Object>();
                     }
 
-                    module.synchronizedSetup(moduleConfig, meta, server);
+                    module.synchronizedSetup(moduleConfig, meta, adapter, server);
                 } catch (java.lang.Exception e) {
                     ErrorHelper.printException("`setup()` for `Module` from", moduleFile, e);
                 }

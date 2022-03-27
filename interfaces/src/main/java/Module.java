@@ -3,6 +3,7 @@ package icejar;
 import java.util.Optional;
 import java.util.Map;
 
+import com.zeroc.Ice.ObjectAdapter;
 import Murmur.*;
 
 /**
@@ -26,10 +27,10 @@ public abstract class Module {
      * <code>synchronizedCleanup()</code>.
      */
     public final void synchronizedSetup(
-            Map<String, Object> config, MetaPrx meta,
+            Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
             Optional<ServerPrx> server) throws Exception
     {
-        setupOrCleanup(true, config, meta, server);
+        setupOrCleanup(true, config, meta, adapter, server);
     }
 
     /**
@@ -38,15 +39,15 @@ public abstract class Module {
      * <code>synchronizedSetup()</code>.
      */
     public final void synchronizedCleanup() throws Exception {
-        setupOrCleanup(false, null, null, null);
+        setupOrCleanup(false, null, null, null, null);
     }
 
     private synchronized void setupOrCleanup(
             boolean callSetup, Map<String, Object> config, MetaPrx meta,
-            Optional<ServerPrx> server) throws Exception
+            ObjectAdapter adapter, Optional<ServerPrx> server) throws Exception
     {
         if (callSetup) {
-            setup(config, meta, server);
+            setup(config, meta, adapter, server);
         } else {
             cleanup();
         }
@@ -64,10 +65,11 @@ public abstract class Module {
      * @param config The parsed configuration for the Client to which this
      * Module instance belongs.
      * @param meta Interface to the Mumble server
+     * @param adapter Interface to create callback objects
      * @param server Interface to the specific virtual server for this Module
      */
     public abstract void setup(
-            Map<String, Object> config, MetaPrx meta,
+            Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
             Optional<ServerPrx> server) throws Exception;
 
     /**
