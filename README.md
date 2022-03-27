@@ -43,9 +43,11 @@ The following keys are used:
 * `ice_proxy_string`: The details of the Ice connection. Takes the form
   `"-h HOST -p PORT"` where `HOST` is the hostname or IP address of the Mumble
   server and `PORT` is the port on which Ice is listening.
+* `ice_host`: The hostname or IP address of the Mumble server. Use `"127.0.0.1"`
+  for a local Mumble server.
 
-  To connect to a Mumble using the default Ice settings, set this value to
-  `"-h 127.0.0.1 -p 6502"`.
+* `ice_port`: The port on which Ice is listening. Mumble uses port `6502` by
+  default
 
 * `ice_secret`: Plaintext secret which must match the value configured on the
   server in order to connect. If the server does not set an Ice secret,
@@ -73,7 +75,8 @@ module whenever a connection is established.
 server_id = 1
 
 ice_args = []
-ice_proxy_string = "-h 127.0.0.1 -p 6502"
+ice_host = "127.0.0.1"
+ice_port = 6502
 ice_secret = "secret"
 
 enabled_modules = [ "test_module", "another_module" ]
@@ -93,9 +96,9 @@ The abstract `Module` class defines two methods which can be overridden:
 
 * `setup`: This method is called whenever a connection is established and *must*
   be overridden by sub-classes. This method is called with the configuration for
-  the module, the interface to the Mumble server, and optionally the interface
-  to the virtual server if one was configured. This method may be called
-  multiple times for any given module.
+  the module, the interface to the Mumble server, the interface to register
+  callbacks and optionally the interface to the virtual server if one was
+  configured. This method may be called multiple times for any given module.
 
 * `cleanup`: This method is called only once, when a module is unloaded. It does
   not have to be overridden, but is provided to support modules which require
