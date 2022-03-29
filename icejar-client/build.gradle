@@ -10,8 +10,8 @@ dependencies {
     implementation 'com.zeroc:ice:3.7.7'
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
 
-    implementation project(':ice')
-    implementation project(':interfaces')
+    implementation project(':ice-generated')
+    implementation project(':icejar-module-shared')
 }
 
 application {
@@ -21,7 +21,7 @@ application {
 jar {
     archiveFileName = 'MumbleIce.jar'
 
-    dependsOn ':interfaces:jar'
+    dependsOn ':icejar-module-shared:jar'
 
     duplicatesStrategy = 'exclude'
 

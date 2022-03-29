@@ -8,13 +8,13 @@ repositories {
 
 dependencies {
     api 'com.zeroc:ice:3.7.7'
-    api project(':ice')
+    api project(':ice-generated')
 }
 
 jar {
-    dependsOn ':ice:jar'
+    dependsOn ':ice-generated:jar'
 
-    archiveFileName = 'MumbleIceInterfaces.jar'
+    archiveFileName = 'MumbleIceModuleShared.jar'
 
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }

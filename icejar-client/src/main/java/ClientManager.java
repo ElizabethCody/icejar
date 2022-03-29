@@ -25,6 +25,7 @@ public final class ClientManager {
     // Define accepted command line options
     private static final String SERVER_CONFIG_DIR_OPT = "-s";
     private static final String MODULE_DIR_OPT = "-m";
+    private static final String PRINT_STACK_TRACE_OPT = "-d";
 
     protected static final String SERVER_CONFIG_EXTENSION = ".toml";
     protected static final String MODULE_EXTENSION = ".jar";
@@ -70,16 +71,12 @@ public final class ClientManager {
                 key.reset();
             }
         } catch (Exception e) {
-            StringBuilder errorMsg = new StringBuilder()
-                .append("Falling back to polling after Watcher service threw: `")
-                .append(e)
-                .append("`");
-            System.err.println(errorMsg);
+            System.err.println(String.format("Falling back to polling after Watcher service threw: `%s`", e));
             while (true) {
                 try {
                     Thread.sleep(5000);
                 } catch (Exception e2) {
-                    System.err.println(e2);
+                    e2.printStackTrace(System.err);
                 }
                 updateClientsAndModules();
             }
@@ -220,6 +217,10 @@ public final class ClientManager {
 
                 case MODULE_DIR_OPT:
                     moduleDir = new File(args[i + 1]);
+                    break;
+
+                case PRINT_STACK_TRACE_OPT:
+                    ErrorHelper.setPrintStackTrace(Boolean.valueOf(args[i + 1]));
                     break;
             }
         }

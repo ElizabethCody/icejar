@@ -49,11 +49,7 @@ public final class Client {
             Optional<String> serverName, Optional<Long> serverID,
             Toml config) throws java.lang.Exception
     {
-        StringBuilder statusMsg = new StringBuilder()
-            .append("Instancing Client for `")
-            .append(configFile)
-            .append("`");
-        System.out.println(statusMsg);
+        System.out.println(String.format("Instancing Client for `%s`", configFile));
 
         this.iceHost = iceHost;
         this.icePort = icePort;
@@ -91,11 +87,7 @@ public final class Client {
     }
 
     private void reconnect() {
-        StringBuilder statusMsg = new StringBuilder()
-            .append("Connection attempt of Client for `")
-            .append(configFile)
-            .append("` started");
-        System.out.println(statusMsg);
+        System.out.println(String.format("Connection attempt of Client for `%s` started", configFile));
 
         reconnectDelay = MIN_RECONNECT_DELAY;
 
@@ -127,12 +119,7 @@ public final class Client {
     }
 
     private void connect() throws java.lang.Exception {
-        String proxyString = new StringBuilder()
-            .append("Meta:default -h ")
-            .append(iceHost)
-            .append(" -p ")
-            .append(icePort)
-            .toString();
+        String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
         String adapterString = new StringBuilder()
@@ -153,33 +140,21 @@ public final class Client {
 
         getServerPrx();
 
-        StringBuilder statusMsg = new StringBuilder()
-            .append("Client for `")
-            .append(configFile)
-            .append("` connected");
-        System.out.println(statusMsg);
+        System.out.println(String.format("Client for `%s` connected", configFile));
     }
 
     private void getServerPrx() throws java.lang.Exception {
         if (serverID.isPresent()) {
             ServerPrx server = meta.getServer(serverID.get().intValue());
             if (server == null) {
-                StringBuilder errorMsg = new StringBuilder()
-                    .append("No server with ID ")
-                    .append(serverID.get());
-                throw new java.lang.Exception(errorMsg.toString());
+                String errorMsg = String.format("No server with ID %d", serverID.get());
+                throw new java.lang.Exception(errorMsg);
             } else if (serverName.isPresent()) {
                 String actualServerName = server.getConf(SERVER_NAME_VAR);
                 if (!serverName.get().equals(actualServerName)) {
-                    StringBuilder errorMsg = new StringBuilder()
-                        .append("Server with ID ")
-                        .append(serverID.get())
-                        .append(" is named \"")
-                        .append(actualServerName)
-                        .append("\" instead of \"")
-                        .append(serverName.get())
-                        .append("\"");
-                    throw new java.lang.Exception(errorMsg.toString());
+                    String errorMsg = String.format("Server with ID `%d` is named \"%s\" instead of \"%s\"",
+                            serverID.get(), actualServerName, serverName.get());
+                    throw new java.lang.Exception(errorMsg);
                 }
             }
             this.server = Optional.of(server);
@@ -200,13 +175,7 @@ public final class Client {
             File changedModuleFile = changedModuleEntry.getKey();
             Module changedModule = changedModuleEntry.getValue();
 
-            StringBuilder statusMsg = new StringBuilder()
-                .append("Reloading `")
-                .append(changedModuleFile)
-                .append("` for `")
-                .append(configFile)
-                .append("`");
-            System.out.println(statusMsg);
+            System.out.println(String.format("Reloading `%s` for `%s`", changedModuleFile, configFile));
 
             unloadModule(changedModuleFile);
             enabledModules.put(changedModuleFile, changedModule);
@@ -262,11 +231,7 @@ public final class Client {
     }
 
     protected void cleanup() {
-        StringBuilder statusMsg = new StringBuilder()
-            .append("Cleaning up Client for `")
-            .append(configFile)
-            .append("`");
-        System.out.println(statusMsg);
+        System.out.println(String.format("Cleaning up Client for `%s`", configFile));
 
         for (File moduleFile: enabledModules.keySet()) {
             unloadModule(moduleFile);
