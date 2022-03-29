@@ -30,7 +30,9 @@ public abstract class Module {
             Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
             Optional<ServerPrx> server) throws Exception
     {
-        setupOrCleanup(true, config, meta, adapter, server);
+        synchronized (this) {
+            setup(config, meta, adapter, server);
+        }
     }
 
     /**
@@ -39,16 +41,7 @@ public abstract class Module {
      * <code>synchronizedSetup()</code>.
      */
     public final void synchronizedCleanup() throws Exception {
-        setupOrCleanup(false, null, null, null, null);
-    }
-
-    private synchronized void setupOrCleanup(
-            boolean callSetup, Map<String, Object> config, MetaPrx meta,
-            ObjectAdapter adapter, Optional<ServerPrx> server) throws Exception
-    {
-        if (callSetup) {
-            setup(config, meta, adapter, server);
-        } else {
+        synchronized (this) {
             cleanup();
         }
     }
