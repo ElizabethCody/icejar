@@ -8,4 +8,4 @@
  */
 
 rootProject.name = 'icejar'
-include('icejar-client', 'icejar-module-shared', 'ice-generated')
+include('icejar-client', 'icejar-module-api', 'ice-generated')

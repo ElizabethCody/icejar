@@ -11,7 +11,7 @@ dependencies {
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
 
     implementation project(':ice-generated')
-    implementation project(':icejar-module-shared')
+    implementation project(':icejar-module-api')
 }
 
 application {
@@ -21,7 +21,7 @@ application {
 jar {
     archiveFileName = 'MumbleIce.jar'
 
-    dependsOn ':icejar-module-shared:jar'
+    dependsOn ':icejar-module-api:jar'
 
     duplicatesStrategy = 'exclude'
 
