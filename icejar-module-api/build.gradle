@@ -14,7 +14,7 @@ dependencies {
 jar {
     dependsOn ':ice-generated:jar'
 
-    archiveFileName = 'MumbleIceModuleShared.jar'
+    archiveFileName = 'MumbleIceModuleAPI.jar'
 
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
