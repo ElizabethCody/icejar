@@ -238,6 +238,10 @@ public final class Client {
 
         unsetCloseCallback();
 
+        if (adapter != null) {
+            adapter.destroy();
+        }
+
         connectThread.interrupt();
         communicator.destroy();
     }
