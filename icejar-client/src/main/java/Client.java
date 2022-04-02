@@ -122,10 +122,10 @@ public final class Client {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
-        String adapterString = new StringBuilder()
-            .append("tcp -h ")
-            .append(iceHost)
-            .toString();
+        if (adapter != null) {
+            adapter.destroy();
+        }
+        String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
         adapter.activate();
 
@@ -183,7 +183,6 @@ public final class Client {
 
         unsetCloseCallback();
         meta.ice_getConnection().close(ConnectionClose.Gracefully);
-        adapter.destroy();
         connectThread.interrupt();
 
         startReconnectThread();
