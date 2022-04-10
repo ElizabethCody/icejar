@@ -13,7 +13,7 @@ There are 2 accepted command line arguments.
 
 # Configuration
 Server configuration files use the [TOML](https://toml.io) format. Their file
-names must end in `.toml`.
+names must end in `.toml`. Parsing is done with [toml4j](https://github.com/mwanji/toml4j).
 
 The following keys are used:
 
