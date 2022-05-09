@@ -40,9 +40,6 @@ The following keys are used:
   The available arguments are documented by [ZeroC](https://doc.zeroc.com/ice/3.7/properties-and-configuration/command-line-parsing-and-initialization).
   The value should be a list of strings.
 
-* `ice_proxy_string`: The details of the Ice connection. Takes the form
-  `"-h HOST -p PORT"` where `HOST` is the hostname or IP address of the Mumble
-  server and `PORT` is the port on which Ice is listening.
 * `ice_host`: The hostname or IP address of the Mumble server. Use `"127.0.0.1"`
   for a local Mumble server.
 
