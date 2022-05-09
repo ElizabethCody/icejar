@@ -309,7 +309,7 @@ public final class ClientManager {
         }
     }
 
-    private static synchronized void updateModuleClasses(Set<File> changedModuleFiles) {
+    private static void updateModuleClasses(Set<File> changedModuleFiles) {
         for (File changedModuleFile: changedModuleFiles) {
             if (changedModuleFile.exists()) {
                 try {
