@@ -16,13 +16,13 @@ import Murmur.*;
 
 // Ice client for a single virtual mumble server
 public final class Client {
-    private final String ICE_CONTEXT_SECRET_VAR = "secret";
-    private final String SERVER_NAME_VAR = "registerName";
+    private static final String ICE_CONTEXT_SECRET_VAR = "secret";
+    private static final String SERVER_NAME_VAR = "registerName";
 
     private File configFile;
 
-    private final int MIN_RECONNECT_DELAY = 1000;
-    private final int MAX_RECONNECT_DELAY = 60000;
+    private static final int MIN_RECONNECT_DELAY = 1000;
+    private static final int MAX_RECONNECT_DELAY = 60000;
     private int reconnectDelay = MIN_RECONNECT_DELAY;
 
     private String iceHost;
