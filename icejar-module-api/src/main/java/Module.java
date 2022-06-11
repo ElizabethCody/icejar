@@ -8,7 +8,7 @@ import Murmur.*;
 
 /**
  * Modules must be <code>.jar</code> files containing a class named "Module"
- * which extends this abstract class.
+ * at the top level which extends this abstract class.
  * <p>
  * Implementations of Module must provide the default contstructor, i.e.
  * <code>new Module()</code> must be a valid way of creating an instance.
@@ -61,7 +61,7 @@ public abstract class Module {
      * @param adapter Interface to create callback objects
      * @param server Interface to the specific virtual server for this Module
      */
-    public abstract void setup(
+    protected abstract void setup(
             Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
             Optional<ServerPrx> server) throws Exception;
 
@@ -72,5 +72,24 @@ public abstract class Module {
      * cleanup. Callbacks registered with Ice are removed automatically and do
      * not require any implementation of this method.
      */
-    public void cleanup() throws Exception {}
+    protected void cleanup() throws Exception {}
+
+
+    /**
+     * Helper function to add a callback to a Mumble server.
+     * 
+     * @param server Interface to the specific virtual server to which the
+     * callback will be added.
+     * @param adapter Interface to create callback objects
+     * @param callback Object implementing the ServerCallback interface
+     */
+    protected static final void addServerCallback(
+            ServerPrx server, ObjectAdapter adapter,
+            ServerCallback callback) throws Exception
+    {
+        ServerCallbackPrx cb = ServerCallbackPrx.uncheckedCast(
+                adapter.addWithUUID(callback));
+
+        server.addCallback(cb);
+    }
 }
