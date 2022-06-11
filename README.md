@@ -106,8 +106,8 @@ Sub-classes of `Module` *must* provide a constructor which accepts no arguments,
 either by keeping the default constructor or explicitly defining its equivalent.
 
 More information is available in the generated documentation for the
-`interafces` and `ice` sub-projects. You can generate this documentation by
-running `gradle javadoc`.
+`icejar-module-api ` and `ice-generated` sub-projects. You can generate this
+documentation by running `gradle javadoc` from the project root.
 
 ## Compling Modules
 To compile modules, add the JAR file located at
