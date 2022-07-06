@@ -125,9 +125,9 @@ public final class Client {
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
         // destroy existing connection
-        if (communicator != null) {
+        if (adapter != null) {
             unsetCloseCallback();
-            communicator.destroy();
+            adapter.destroy();
         }
 
         String adapterString = String.format("tcp -h %s", iceHost);
