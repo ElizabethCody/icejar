@@ -99,9 +99,11 @@ public final class Client {
             } catch (java.lang.Exception e) {
                 ErrorHelper.printException("Connection attempt of Client for", configFile, e);
 
+                /*
                 if (e instanceof CommunicatorDestroyedException) {
                     return;
                 }
+                */
 
                 try {
                     if (reconnectDelay < MAX_RECONNECT_DELAY) {
@@ -122,9 +124,12 @@ public final class Client {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
-        if (adapter != null) {
-            adapter.destroy();
+        // destroy existing connection
+        if (communicator != null) {
+            unsetCloseCallback();
+            communicator.destroy();
         }
+
         String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
         adapter.activate();
@@ -237,10 +242,6 @@ public final class Client {
         }
 
         unsetCloseCallback();
-
-        if (adapter != null) {
-            adapter.destroy();
-        }
 
         connectThread.interrupt();
         communicator.destroy();
