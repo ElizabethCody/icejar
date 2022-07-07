@@ -82,70 +82,88 @@ public final class Client {
     }
 
     private synchronized void startReconnectThread() {
-        connectThread = new Thread(this::reconnect);
+        if (connectThread != null) {
+            connectThread.interrupt();
+            try {
+                connectThread.join();
+            } catch (InterruptedException e) {
+                ErrorHelper.printException(
+                        "Waiting for previous connection thread of Client for",
+                        configFile, e);
+                return;
+            }
+        }
+
+        connectThread = new Thread(() -> {
+            try {
+                this.reconnect();
+            } catch (java.lang.Exception e) {
+                ErrorHelper.printException(
+                        "Connection thread of Client for", configFile, e);
+            }
+        });
+
         connectThread.start();
     }
 
-    private void reconnect() {
+    private void reconnect() throws java.lang.Exception {
         System.out.println(String.format("Connection attempt of Client for `%s` started", configFile));
 
         reconnectDelay = MIN_RECONNECT_DELAY;
 
-        while (true) {
+        while (!Thread.interrupted()) {
             try {
-                connect();
+                disconnect();
+                attemptConnection();
                 setup();
                 return;
             } catch (java.lang.Exception e) {
                 ErrorHelper.printException("Connection attempt of Client for", configFile, e);
 
-                /*
-                if (e instanceof CommunicatorDestroyedException) {
-                    return;
-                }
-                */
-
-                try {
-                    if (reconnectDelay < MAX_RECONNECT_DELAY) {
-                        Thread.sleep(reconnectDelay);
-                        reconnectDelay *= 2;
-                    } else {
-                        Thread.sleep(MAX_RECONNECT_DELAY);
-                    }
-                } catch (InterruptedException e2) {
-                    ErrorHelper.printException("Connection thread of Client for", configFile, e2);
-                    return;
+                if (reconnectDelay < MAX_RECONNECT_DELAY) {
+                    Thread.sleep(reconnectDelay);
+                    reconnectDelay *= 2;
+                } else {
+                    Thread.sleep(MAX_RECONNECT_DELAY);
                 }
             }
         }
     }
 
-    private void connect() throws java.lang.Exception {
+    private void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
-
-        // destroy existing connection
-        if (adapter != null) {
-            unsetCloseCallback();
-            adapter.destroy();
-        }
 
         String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
         adapter.activate();
 
-        Connection connection = meta.ice_getConnection();
-        // Set active connection management parameters
-        connection.setACM(
+        // Set Active Connection Management (ACM) parameters
+        meta.ice_getConnection().setACM(
                 OptionalInt.of(120),
                 Optional.of(ACMClose.CloseOnIdle),
                 Optional.of(ACMHeartbeat.HeartbeatOnIdle));
-        // Try to reconnect if the connection closes
-        connection.setCloseCallback(closed -> startReconnectThread());
+
+        // Try to reconnect if the remote mumble server drops the connection.
+        setAutoReconnectEnabled(true);
 
         getServerPrx();
 
         System.out.println(String.format("Client for `%s` connected", configFile));
+    }
+
+    private void disconnect() {
+        // When we explicitly disconnect, we don't want to trigger an automatic
+        // reconnect attempt.
+        setAutoReconnectEnabled(false);
+        if (meta != null) {
+            meta.ice_getConnection().close(ConnectionClose.Gracefully);
+        }
+
+        if (adapter != null) {
+            adapter.destroy();
+            adapter = null;
+        }
     }
 
     private void getServerPrx() throws java.lang.Exception {
@@ -185,10 +203,6 @@ public final class Client {
             unloadModule(changedModuleFile);
             enabledModules.put(changedModuleFile, changedModule);
         }
-
-        unsetCloseCallback();
-        meta.ice_getConnection().close(ConnectionClose.Gracefully);
-        connectThread.interrupt();
 
         startReconnectThread();
     }
@@ -241,15 +255,19 @@ public final class Client {
             unloadModule(moduleFile);
         }
 
-        unsetCloseCallback();
-
-        connectThread.interrupt();
+        disconnect();
         communicator.destroy();
     }
 
-    private void unsetCloseCallback() {
+    private void setAutoReconnectEnabled(boolean isEnabled) {
         if (meta != null) {
-            meta.ice_getConnection().setCloseCallback(closed -> {});
+            Connection connection = meta.ice_getConnection();
+
+            if (isEnabled) {
+                connection.setCloseCallback(closed -> startReconnectThread());
+            } else {
+                connection.setCloseCallback(closed -> {});
+            }
         }
     }
 }
