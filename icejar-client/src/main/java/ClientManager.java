@@ -85,36 +85,15 @@ public final class ClientManager {
 
 
     private static void updateClientsAndModules() {
+        updateModules();
+        updateClients();
+    }
+
+    private static void updateClients() {
         Set<File> serverConfigFiles = getServerConfigFiles();
-        Set<File> moduleFiles = getModuleFiles();
-
         Set<File> changedServerConfigFiles = getChangedServerConfigFiles(serverConfigFiles);
-        Set<File> changedModuleFiles = getChangedModuleFiles(moduleFiles);
-
-        ClientManager.moduleFiles = moduleFiles;
         ClientManager.serverConfigFiles = serverConfigFiles;
-
         updateLastModifiedTimes(changedServerConfigFiles);
-        updateLastModifiedTimes(changedModuleFiles);
-        updateModuleClasses(changedModuleFiles);
-
-        for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
-            Client client = clientEntry.getValue();
-
-            Map<File, Module> modulesToReload = new HashMap<File, Module>();
-            for (File changedModuleFile: changedModuleFiles) {
-                if (client.hasModuleFile(changedModuleFile)) {
-                    Class moduleClass = moduleClasses.get(changedModuleFile);
-                    Module module = instanceModuleClass(moduleClass);
-                    modulesToReload.put(changedModuleFile, module);
-                }
-            }
-
-            if (!modulesToReload.isEmpty()) {
-                client.reloadModules(modulesToReload);
-            }
-        }
-
 
         for (File changedServerConfigFile: changedServerConfigFiles) {
             if (changedServerConfigFile.exists()) {
@@ -175,6 +154,34 @@ public final class ClientManager {
             } else {
                 // If the file was removed, clean up the client and remove it.
                 removeClient(changedServerConfigFile);
+            }
+        }
+    }
+
+    private static void updateModules() {
+        Set<File> moduleFiles = getModuleFiles();
+
+        Set<File> changedModuleFiles = getChangedModuleFiles(moduleFiles);
+
+        ClientManager.moduleFiles = moduleFiles;
+
+        updateLastModifiedTimes(changedModuleFiles);
+        updateModuleClasses(changedModuleFiles);
+
+        for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
+            Client client = clientEntry.getValue();
+
+            Map<File, Module> modulesToReload = new HashMap<File, Module>();
+            for (File changedModuleFile: changedModuleFiles) {
+                if (client.hasModuleFile(changedModuleFile)) {
+                    Class moduleClass = moduleClasses.get(changedModuleFile);
+                    Module module = instanceModuleClass(moduleClass);
+                    modulesToReload.put(changedModuleFile, module);
+                }
+            }
+
+            if (!modulesToReload.isEmpty()) {
+                client.reloadModules(modulesToReload);
             }
         }
     }
