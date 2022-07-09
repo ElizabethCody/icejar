@@ -98,15 +98,25 @@ public final class ClientManager {
         updateLastModifiedTimes(changedModuleFiles);
         updateModuleClasses(changedModuleFiles);
 
-        // Clients are reloaded if their configuration files were changed.
-        for (File changedServerConfigFile: changedServerConfigFiles) {
-            // Clean up existing instance
-            if (clientMap.containsKey(changedServerConfigFile)) {
-                Client currentClient = clientMap.get(changedServerConfigFile);
-                currentClient.cleanup();
-                clientMap.remove(changedServerConfigFile);
+        for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
+            Client client = clientEntry.getValue();
+
+            Map<File, Module> modulesToReload = new HashMap<File, Module>();
+            for (File changedModuleFile: changedModuleFiles) {
+                if (client.hasModuleFile(changedModuleFile)) {
+                    Class moduleClass = moduleClasses.get(changedModuleFile);
+                    Module module = instanceModuleClass(moduleClass);
+                    modulesToReload.put(changedModuleFile, module);
+                }
             }
 
+            if (!modulesToReload.isEmpty()) {
+                client.reloadModules(modulesToReload);
+            }
+        }
+
+
+        for (File changedServerConfigFile: changedServerConfigFiles) {
             if (changedServerConfigFile.exists()) {
                 try {
                     Toml config = new Toml().read(changedServerConfigFile);
@@ -114,6 +124,7 @@ public final class ClientManager {
                     Boolean enabled = config.getBoolean(ENABLED_VAR);
                     // if `enabled` is defined AND false
                     if (enabled != null && !enabled) {
+                        removeClient(changedServerConfigFile);
                         continue;
                     }
 
@@ -144,37 +155,35 @@ public final class ClientManager {
                     Optional<String> serverName = Optional.ofNullable(config.getString(SERVER_NAME_VAR));
                     Optional<Long> serverID = Optional.ofNullable(config.getLong(SERVER_ID_VAR));
 
-                    Client newClient = new Client(
-                            changedServerConfigFile, iceArgs, iceHost, icePort,
-                            iceSecret, enabledModules, serverName, serverID,
-                            config);
+                    Client client;
 
-                    clientMap.put(changedServerConfigFile, newClient);
+                    if (clientMap.containsKey(changedServerConfigFile)) {
+                        client = clientMap.get(changedServerConfigFile);
+                    } else {
+                        client = new Client(changedServerConfigFile);
+                        clientMap.put(changedServerConfigFile, client);
+                    }
+
+                    client.reconfigure(
+                            iceArgs, iceHost, icePort, iceSecret,
+                            enabledModules, serverName, serverID, config);
+
+                    // clientMap.put(changedServerConfigFile, newClient);
                 } catch (Exception e) {
                     ErrorHelper.printException("loading server config file", changedServerConfigFile, e);
                 }
+            } else {
+                // If the file was removed, clean up the client and remove it.
+                removeClient(changedServerConfigFile);
             }
         }
+    }
 
-        // Clients whose configuration files were not changed still need to be
-        // notified of any changes to modules in case they need to reload them.
-        for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
-            if (!changedServerConfigFiles.contains(clientEntry.getKey())) {
-                Client client = clientEntry.getValue();
-
-                Map<File, Module> modulesToReload = new HashMap<File, Module>();
-                for (File changedModuleFile: changedModuleFiles) {
-                    if (client.hasModuleFile(changedModuleFile)) {
-                        Class moduleClass = moduleClasses.get(changedModuleFile);
-                        Module module = instanceModuleClass(moduleClass);
-                        modulesToReload.put(changedModuleFile, module);
-                    }
-                }
-
-                if (!modulesToReload.isEmpty()) {
-                    client.reloadModules(modulesToReload);
-                }
-            }
+    private static void removeClient(File configFile) {
+        if (clientMap.containsKey(configFile)) {
+            Client client = clientMap.get(configFile);
+            client.cleanup();
+            clientMap.remove(configFile);
         }
     }
 

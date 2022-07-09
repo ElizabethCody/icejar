@@ -43,36 +43,47 @@ public final class Client {
     private Thread connectThread;
 
 
-    protected Client(
-            File configFile, String[] iceArgs, String iceHost, int icePort,
+    protected Client(File configFile) {
+        this.configFile = configFile;
+    }
+
+    protected void reconfigure(
+            String[] iceArgs, String iceHost, int icePort,
             Optional<String> iceSecret, Map<File, Module> enabledModules,
             Optional<String> serverName, Optional<Long> serverID,
             Toml config) throws java.lang.Exception
     {
-        System.out.println(String.format("Instancing Client for `%s`", configFile));
-
         this.iceHost = iceHost;
         this.icePort = icePort;
         this.iceArgs = iceArgs;
 
-        this.configFile = configFile;
         this.serverName = serverName;
         this.serverID = serverID;
         this.config = config;
-        this.enabledModules = enabledModules;
 
-        Properties properties = Util.createProperties(iceArgs);
-        properties.setProperty("Ice.ImplicitContext", "Shared");
+        // Set up the communicator
+        if (communicator == null || communicator.isShutdown()) {
+            Properties properties = Util.createProperties();
+            properties.setProperty("Ice.ImplicitContext", "Shared");
 
-        InitializationData initData = new InitializationData();
-        initData.properties = properties;
+            InitializationData initData = new InitializationData();
+            initData.properties = properties;
 
-        communicator = Util.initialize(initData);
-
-        if (iceSecret.isPresent()) {
-            ImplicitContext iceContext = communicator.getImplicitContext();
-            iceContext.put(ICE_CONTEXT_SECRET_VAR, iceSecret.get());
+            communicator = Util.initialize(initData);
         }
+
+        ImplicitContext iceContext = communicator.getImplicitContext();
+        iceContext.put(ICE_CONTEXT_SECRET_VAR, iceSecret.orElse(""));
+
+        // Unload modules which are no longer enabled
+        if (this.enabledModules != null) {
+            for (File module: enabledModules.keySet()) {
+                if (!enabledModules.containsKey(module)) {
+                    unloadModule(module);
+                }
+            }
+        }
+        this.enabledModules = enabledModules;
 
         startReconnectThread();
     }
@@ -130,7 +141,7 @@ public final class Client {
         }
     }
 
-    private void attemptConnection() throws java.lang.Exception {
+    private synchronized void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
