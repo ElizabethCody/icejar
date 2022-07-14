@@ -149,7 +149,7 @@ public final class ClientManager {
 
                     // clientMap.put(changedServerConfigFile, newClient);
                 } catch (Exception e) {
-                    ErrorHelper.printException("loading server config file", changedServerConfigFile, e);
+                    ExceptionLogger.print("loading server config file", changedServerConfigFile, e);
                 }
             } else {
                 // If the file was removed, clean up the client and remove it.
@@ -204,7 +204,7 @@ public final class ClientManager {
             Module module = Module.class.cast(moduleObj);
             return module;
         } catch (Exception e) {
-            ErrorHelper.printException("instancing `Module` class for", moduleClass, e);
+            ExceptionLogger.print("instancing `Module` class for", moduleClass, e);
             return null;
         }
     }
@@ -236,7 +236,7 @@ public final class ClientManager {
                     break;
 
                 case PRINT_STACK_TRACE_OPT:
-                    ErrorHelper.setPrintStackTrace(Boolean.valueOf(args[i + 1]));
+                    ExceptionLogger.setPrintStackTrace(Boolean.valueOf(args[i + 1]));
                     break;
             }
         }
@@ -336,7 +336,7 @@ public final class ClientManager {
 
                     moduleClasses.put(changedModuleFile, moduleClass);
                 } catch (Exception e) {
-                    ErrorHelper.printException("loading `Module` class from", changedModuleFile, e);
+                    ExceptionLogger.print("loading `Module` class from", changedModuleFile, e);
                     moduleClasses.remove(changedModuleFile);
                 }
             } else {

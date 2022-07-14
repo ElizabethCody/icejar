@@ -98,7 +98,7 @@ public final class Client {
             try {
                 connectThread.join();
             } catch (InterruptedException e) {
-                ErrorHelper.printException(
+                ExceptionLogger.print(
                         "Waiting for previous connection thread of Client for",
                         configFile, e);
                 return;
@@ -109,7 +109,7 @@ public final class Client {
             try {
                 this.reconnect();
             } catch (java.lang.Exception e) {
-                ErrorHelper.printException(
+                ExceptionLogger.print(
                         "Connection thread of Client for", configFile, e);
             }
         });
@@ -127,9 +127,12 @@ public final class Client {
                 disconnect();
                 attemptConnection();
                 setup();
-                return;
+                break;
             } catch (java.lang.Exception e) {
-                ErrorHelper.printException("Connection attempt of Client for", configFile, e);
+                ExceptionLogger.print("Connection attempt of Client for", configFile, e);
+                if (e instanceof OperationInterruptedException) {
+                    break;
+                }
 
                 if (reconnectDelay < MAX_RECONNECT_DELAY) {
                     Thread.sleep(reconnectDelay);
@@ -141,7 +144,7 @@ public final class Client {
         }
     }
 
-    private synchronized void attemptConnection() throws java.lang.Exception {
+    private void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
@@ -223,9 +226,11 @@ public final class Client {
             Module module = enabledModules.get(moduleFile);
             if (module != null) {
                 try {
-                    module.synchronizedCleanup();
+                    synchronized(module) {
+                        module.cleanup();
+                    }
                 } catch (java.lang.Exception e) {
-                    ErrorHelper.printException("`cleanup()` for `Module` from", moduleFile, e);
+                    ExceptionLogger.print("`cleanup()` for `Module` from", moduleFile, e);
                 }
             }
 
@@ -233,7 +238,7 @@ public final class Client {
         }
     }
 
-    private synchronized void setup() {
+    private void setup() {
         for (Map.Entry<File, Module> moduleEntry: enabledModules.entrySet()) {
             File moduleFile = moduleEntry.getKey();
             String moduleFileName = moduleFile.getName();
@@ -251,9 +256,11 @@ public final class Client {
                         moduleConfig = new HashMap<String, java.lang.Object>();
                     }
 
-                    module.synchronizedSetup(moduleConfig, meta, adapter, server);
+                    synchronized(module) {
+                        module.setup(moduleConfig, meta, adapter, server);
+                    }
                 } catch (java.lang.Exception e) {
-                    ErrorHelper.printException("`setup()` for `Module` from", moduleFile, e);
+                    ExceptionLogger.print("`setup()` for `Module` from", moduleFile, e);
                 }
             }
         }

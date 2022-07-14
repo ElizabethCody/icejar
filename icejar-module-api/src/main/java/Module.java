@@ -20,32 +20,7 @@ import Murmur.*;
  * <code>cleanup()</code> is thread-safe given that other logic from your
  * implementation may be executing in a different thread.
  */
-public abstract class Module {
-    /**
-     * Makes a call to <code>setup()</code> which will not occur at the same
-     * time as any other call to <code>synchronizedSetup()</code> or
-     * <code>synchronizedCleanup()</code>.
-     */
-    public final void synchronizedSetup(
-            Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
-            Optional<ServerPrx> server) throws Exception
-    {
-        synchronized (this) {
-            setup(config, meta, adapter, server);
-        }
-    }
-
-    /**
-     * Makes a call to <code>cleanup()</code> which will not occur at the same
-     * time as any other call to <code>synchronizedCleanup()</code> or
-     * <code>synchronizedSetup()</code>.
-     */
-    public final void synchronizedCleanup() throws Exception {
-        synchronized (this) {
-            cleanup();
-        }
-    }
-
+public interface Module {
     /**
      * Set up a Module when a connection is established.
      * <p>
@@ -61,7 +36,7 @@ public abstract class Module {
      * @param adapter Interface to create callback objects.
      * @param server Interface to the specific virtual server for this Module.
      */
-    protected abstract void setup(
+    abstract void setup(
             Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
             Optional<ServerPrx> server) throws Exception;
 
@@ -72,83 +47,5 @@ public abstract class Module {
      * cleanup. Callbacks registered with Ice are removed automatically and do
      * not require any implementation of this method.
      */
-    protected void cleanup() throws Exception {}
-
-
-    /**
-     * Helper function to add a callback to a Mumble server.
-     * 
-     * @param server Interface to the specific virtual server to which the
-     * callback will be added.
-     * @param adapter Interface to create callback objects.
-     * @param callback Object implementing the ServerCallback interface.
-     *
-     * @return The ServerCallbackPrx object which can be used to un-register
-     * the callback.
-     */
-    protected static final ServerCallbackPrx addServerCallback(
-            ServerPrx server, ObjectAdapter adapter,
-            ServerCallback callback) throws Exception
-    {
-        ServerCallbackPrx cb = ServerCallbackPrx.uncheckedCast(
-                adapter.addWithUUID(callback));
-
-        server.addCallback(cb);
-        return cb;
-    }
-
-    /**
-     * Helper function to add a context action callback to a Mumble server.
-     * 
-     * @param server Interface to the specific virtual server to which the
-     * callback will be added.
-     * @param adapter Interface to create callback objects.
-     * @param session The session ID of the user to which the action is added.
-     * @param action Unique internal name for the action. This name identifies
-     * the action to the given callback
-     * @param text External name of the action. This is the text label for the
-     * action as displayed in the user's Mumble client.
-     * @param callback Object implementing the ServerContextCallback interface.
-     *
-     * @return The ServerContextCallbackPrx object which can be used to
-     * un-register the callback.
-     */
-    protected static final ServerContextCallbackPrx addServerContextCallback(
-            ServerPrx server, ObjectAdapter adapter,
-            int session, String action, String text,
-            ServerContextCallback callback, int ctx) throws Exception
-    {
-        ServerContextCallbackPrx cb = ServerContextCallbackPrx.uncheckedCast(
-                adapter.addWithUUID(callback));
-
-        server.addContextCallback(session, action, text, cb, ctx);
-        return cb;
-    }
-
-    /**
-     * Helper function to send a new message to the same destination as an
-     * existing message.
-     * <p>
-     * This is useful in the implementation of features which respond to text
-     * messages from users.
-     *
-     * @param server Interface to the specific virtual server to which the
-     * text message will be sent.
-     * @param message Text message from which the destination for the new
-     * message will be copied.
-     */
-    protected static final void sendMessageSameDestination(
-            ServerPrx server, TextMessage message,
-            String messageString) throws Exception
-    {
-        for (int session: message.sessions) {
-            server.sendMessage(session, messageString);
-        }
-        for (int channel: message.channels) {
-            server.sendMessageChannel(channel, false, messageString);
-        }
-        for (int tree: message.trees) {
-            server.sendMessageChannel(tree, true, messageString);
-        }
-    }
+    default void cleanup() throws Exception {}
 }

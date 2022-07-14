@@ -1,10 +1,10 @@
 package icejar;
 
 
-public final class ErrorHelper {
+public final class ExceptionLogger {
     private static boolean printStackTrace = false;
 
-    protected static void printException(String message, Object o, Exception e) {
+    protected static void print(String message, Object o, Throwable e) {
         if (printStackTrace) {
             String errorMsg = String.format("%s `%s` threw:", message, o);
             System.err.println(errorMsg);
@@ -15,6 +15,6 @@ public final class ErrorHelper {
     }
 
     protected static void setPrintStackTrace(boolean printStackTrace) {
-        ErrorHelper.printStackTrace = printStackTrace;
+        ExceptionLogger.printStackTrace = printStackTrace;
     }
 }
