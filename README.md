@@ -86,10 +86,10 @@ arbitrary_key = "arbitrary_value"
 
 # Modules
 Modules are JAR files which contain a class called `Module` which is not in any
-named package. This class *must* extend the abstract `Module` defined in
-`interfaces/src/main/java/Module.java`.
+named package. This class *must* implement `Module` interface defined in
+`icejar-module-api/src/main/java/Module.java`.
 
-The abstract `Module` class defines two methods which can be overridden:
+The `Module` interface defines two methods which can be overridden:
 
 * `setup`: This method is called whenever a connection is established and *must*
   be overridden by sub-classes. This method is called with the configuration for
@@ -102,7 +102,7 @@ The abstract `Module` class defines two methods which can be overridden:
   some additional clean-up procedure. Callbacks registered using Ice are cleaned
   up automatically and do not require an implementation of this method.
 
-Sub-classes of `Module` *must* provide a constructor which accepts no arguments,
+Implementors of `Module` *must* provide a constructor which accepts no arguments,
 either by keeping the default constructor or explicitly defining its equivalent.
 
 More information is available in the generated documentation for the
