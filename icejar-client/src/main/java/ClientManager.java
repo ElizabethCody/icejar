@@ -9,7 +9,10 @@ import java.util.HashMap;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Optional;
+import java.util.jar.JarFile;
+import java.util.jar.JarEntry;
 import java.net.URLClassLoader;
 import java.net.URL;
 import java.nio.file.WatchService;
@@ -29,6 +32,7 @@ public final class ClientManager {
 
     protected static final String SERVER_CONFIG_EXTENSION = ".toml";
     protected static final String MODULE_EXTENSION = ".jar";
+    protected static final String CLASS_EXTENSION = ".class";
 
     // server config field names
     private static final String ICE_ARGS_VAR = "ice_args";
@@ -327,19 +331,30 @@ public final class ClientManager {
 
     private static void updateModuleClasses(Set<File> changedModuleFiles) {
         for (File changedModuleFile: changedModuleFiles) {
-            if (changedModuleFile.exists()) {
-                try {
-                    URL moduleFileURL = changedModuleFile.toURI().toURL();
-                    URL[] urls = { moduleFileURL };
-                    URLClassLoader classLoader = new URLClassLoader(urls);
-                    Class moduleClass = Class.forName("Module", true, classLoader);
+            try {
+                JarFile jar = new JarFile(changedModuleFile);
 
-                    moduleClasses.put(changedModuleFile, moduleClass);
-                } catch (Exception e) {
-                    ExceptionLogger.print("loading `Module` class from", changedModuleFile, e);
-                    moduleClasses.remove(changedModuleFile);
+                URL moduleFileURL = changedModuleFile.toURI().toURL();
+                URL[] urls = { moduleFileURL };
+
+                Enumeration<JarEntry> entries = jar.entries();
+                while (entries.hasMoreElements()) {
+                    URLClassLoader classLoader = new URLClassLoader(urls);
+
+                    JarEntry entry = entries.nextElement();
+                    String className = entry.getName().replace('/', '.');
+                    if (className.endsWith(CLASS_EXTENSION)) {
+                        className = className.substring(0, className.length() - CLASS_EXTENSION.length());
+                        Class moduleClass = Class.forName(className, true, classLoader);
+
+                        if (Module.class.isAssignableFrom(moduleClass)) {
+                            moduleClasses.put(changedModuleFile, moduleClass);
+                            break;
+                        }
+                    }
                 }
-            } else {
+            } catch (Exception e) {
+                ExceptionLogger.print("loading Module from", changedModuleFile, e);
                 moduleClasses.remove(changedModuleFile);
             }
         }
