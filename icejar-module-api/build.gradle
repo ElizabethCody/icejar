@@ -16,6 +16,8 @@ jar {
 
     archiveFileName = 'MumbleIceModuleAPI.jar'
 
+    destinationDirectory.set(file("$buildDir"))
+
     from {
         configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
     }

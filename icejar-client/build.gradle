@@ -21,6 +21,8 @@ application {
 jar {
     archiveFileName = 'MumbleIce.jar'
 
+    destinationDirectory.set(file("$buildDir"))
+
     dependsOn ':icejar-module-api:jar'
 
     duplicatesStrategy = 'exclude'

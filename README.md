@@ -85,9 +85,8 @@ arbitrary_key = "arbitrary_value"
 ```
 
 # Modules
-Modules are JAR files which contain a class called `Module` which is not in any
-named package. This class *must* implement `Module` interface defined in
-`icejar-module-api/src/main/java/Module.java`.
+Modules are JAR files which contain a class implementing the `Module` interface
+defined in `icejar-module-api/src/main/java/Module.java`.
 
 The `Module` interface defines two methods which can be overridden:
 
@@ -111,4 +110,4 @@ documentation by running `gradle javadoc` from the project root.
 
 ## Compling Modules
 To compile modules, add the JAR file located at
-`interfaces/build/libs/MumbleIceInterfaces.jar` to the class path. 
+`interfaces/build/MumbleIceInterfaces.jar` to the class path. 
