@@ -322,9 +322,10 @@ public final class ClientManager {
 
     private static void updateLastModifiedTimes(Set<File> files) {
         for (File file: files) {
-            lastModifiedTimes.remove(file);
             if (file.exists()) {
                 lastModifiedTimes.put(file, file.lastModified());
+            } else {
+                lastModifiedTimes.remove(file);
             }
         }
     }
