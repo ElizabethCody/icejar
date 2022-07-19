@@ -150,8 +150,6 @@ public final class ClientManager {
                     client.reconfigure(
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
-
-                    // clientMap.put(changedServerConfigFile, newClient);
                 } catch (Exception e) {
                     ExceptionLogger.print("loading server config file", changedServerConfigFile, e);
                 }
