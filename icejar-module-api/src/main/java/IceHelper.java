@@ -56,6 +56,28 @@ public final class IceHelper {
         return cb;
     }
 
+    /** 
+     * Helper function to add an authenticator to a Mumble server.
+     *
+     * @param server Interface to the specific virtual server for which the
+     * authenticator will be set.
+     * @param adapter Interface to create authenticator objects.
+     * @param authenticator Object implementing the ServerAuthenticator
+     * interface.
+     *
+     * @return The ServerAuthenticatorPrx object which was set.
+     * */
+    public static ServerAuthenticatorPrx setServerAuthenticator(
+            ServerPrx server, ObjectAdapter adapter,
+            ServerAuthenticator authenticator) throws Exception
+    {
+        ServerAuthenticatorPrx auth = ServerAuthenticatorPrx.uncheckedCast(
+                adapter.addWithUUID(authenticator));
+
+        server.setAuthenticator(auth);
+        return auth;
+    }
+
     /**
      * Helper function to send a new message to the same destination as an
      * existing message.
