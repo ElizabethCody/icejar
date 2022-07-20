@@ -1,6 +1,6 @@
 package icejar;
 
-
+// Print error/exception messages to stderr in a consistent format.
 public final class ExceptionLogger {
     private static boolean printStackTrace = false;
 

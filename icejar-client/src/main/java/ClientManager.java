@@ -65,8 +65,10 @@ public final class ClientManager {
 
         try {
             WatchService watcher = FileSystems.getDefault().newWatchService();
-            serverConfigDir.toPath().register(watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
-            moduleDir.toPath().register(watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+            serverConfigDir.toPath().register(
+                    watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
+            moduleDir.toPath().register(
+                    watcher, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
 
             WatchKey key;
             while ((key = watcher.take()) != null) {
@@ -95,7 +97,8 @@ public final class ClientManager {
 
     private static void updateClients() {
         Set<File> serverConfigFiles = getServerConfigFiles();
-        Set<File> changedServerConfigFiles = getChangedServerConfigFiles(serverConfigFiles);
+        Set<File> changedServerConfigFiles = getChangedServerConfigFiles(
+                serverConfigFiles);
         ClientManager.serverConfigFiles = serverConfigFiles;
         updateLastModifiedTimes(changedServerConfigFiles);
 
@@ -115,7 +118,8 @@ public final class ClientManager {
                     String iceHost = config.getString(ICE_HOST_VAR);
                     int icePort = config.getLong(ICE_PORT_VAR).intValue();
 
-                    Optional<String> iceSecret = Optional.ofNullable(config.getString(ICE_SECRET_VAR));
+                    Optional<String> iceSecret = Optional.ofNullable(
+                            config.getString(ICE_SECRET_VAR));
 
                     List<String> enabledModuleNames = config.getList(
                             ENABLED_MODULES_VAR, new ArrayList<String>());
@@ -133,10 +137,13 @@ public final class ClientManager {
                             enabledModuleClasses.put(enabledModuleFile, null);
                         }
                     }
-                    Map<File, Module> enabledModules = moduleMapFromClassMap(enabledModuleClasses);
+                    Map<File, Module> enabledModules = moduleMapFromClassMap(
+                            enabledModuleClasses);
 
-                    Optional<String> serverName = Optional.ofNullable(config.getString(SERVER_NAME_VAR));
-                    Optional<Long> serverID = Optional.ofNullable(config.getLong(SERVER_ID_VAR));
+                    Optional<String> serverName = Optional.ofNullable(
+                            config.getString(SERVER_NAME_VAR));
+                    Optional<Long> serverID = Optional.ofNullable(
+                            config.getLong(SERVER_ID_VAR));
 
                     Client client;
 
@@ -151,7 +158,8 @@ public final class ClientManager {
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
-                    ExceptionLogger.print("loading server config file", changedServerConfigFile, e);
+                    ExceptionLogger.print(
+                            "loading server config file", changedServerConfigFile, e);
                 }
             } else {
                 // If the file was removed, clean up the client and remove it.
@@ -211,7 +219,9 @@ public final class ClientManager {
         }
     }
 
-    private static Map<File, Module> moduleMapFromClassMap(Map<File, Class> classMap) {
+    private static Map<File, Module> moduleMapFromClassMap(
+            Map<File, Class> classMap)
+    {
         Map<File, Module> moduleMap = new HashMap<File, Module>();
 
         for (Map.Entry<File, Class> classEntry: classMap.entrySet()) {
@@ -246,13 +256,16 @@ public final class ClientManager {
 
 
     private static Set<File> getServerConfigFiles() {
-        return getFilesWithExtensionFromDir(serverConfigDir, SERVER_CONFIG_EXTENSION);
+        return getFilesWithExtensionFromDir(
+                serverConfigDir, SERVER_CONFIG_EXTENSION);
     }
 
     private static Set<File> getModuleFiles() {
         return getFilesWithExtensionFromDir(moduleDir, MODULE_EXTENSION);
     }
 
+    // Returns the files in the given directory which have names ending in the
+    // given extension.
     private static Set<File> getFilesWithExtensionFromDir(File dir, String ext) {
         Set<File> files = new HashSet<File>();
 
@@ -270,7 +283,9 @@ public final class ClientManager {
     }
 
 
-    private static Set<File> getChangedServerConfigFiles(Set<File> newServerConfigFiles) {
+    private static Set<File> getChangedServerConfigFiles(
+            Set<File> newServerConfigFiles)
+    {
         return getChangedFiles(newServerConfigFiles, serverConfigFiles);
     }
 
@@ -280,11 +295,14 @@ public final class ClientManager {
 
     // Return the set of files that were changed between oldFiles and newFiles.
     // A change is defined as a file being created, modified, or removed.
-    private static Set<File> getChangedFiles(Set<File> newFiles, Set<File> oldFiles) {
+    private static Set<File> getChangedFiles(
+            Set<File> newFiles, Set<File> oldFiles)
+    {
         Set<File> union = new HashSet<File>();
         union.addAll(newFiles);
         union.addAll(oldFiles);
 
+        // Files which are absent from at least one set
         Set<File> symmetricDifference = new HashSet<File>();
         for (File file: union) {
             if (!newFiles.contains(file) || !oldFiles.contains(file)) {
@@ -292,6 +310,7 @@ public final class ClientManager {
             }
         }
 
+        // Files which are present in both sets
         Set<File> intersection = new HashSet<File>();
         for (File file: union) {
             if (newFiles.contains(file) && oldFiles.contains(file)) {
@@ -299,9 +318,10 @@ public final class ClientManager {
             }
         }
 
+        // Files are modified if their modified time has changed
         Set<File> modified = new HashSet<File>();
         for (File file: intersection) {
-            if (file.lastModified() > lastModifiedTimes.get(file)) {
+            if (file.lastModified() != lastModifiedTimes.get(file)) {
                 modified.add(file);
             }
         }
@@ -343,8 +363,10 @@ public final class ClientManager {
                     JarEntry entry = entries.nextElement();
                     String className = entry.getName().replace('/', '.');
                     if (className.endsWith(CLASS_EXTENSION)) {
-                        className = className.substring(0, className.length() - CLASS_EXTENSION.length());
-                        Class moduleClass = Class.forName(className, true, classLoader);
+                        className = className.substring(
+                                0, className.length() - CLASS_EXTENSION.length());
+                        Class moduleClass = Class.forName(
+                                className, true, classLoader);
 
                         if (Module.class.isAssignableFrom(moduleClass)) {
                             moduleClasses.put(changedModuleFile, moduleClass);
