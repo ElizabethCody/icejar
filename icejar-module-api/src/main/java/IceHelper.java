@@ -79,6 +79,28 @@ public final class IceHelper {
     }
 
     /**
+     * Helper function to add a meta callback (which is notified about the
+     * starting and stopping of virtual servers) to a Mumble server.
+     *
+     * @param meta Interface to the Mumble server.
+     * @param adapter Interface to create callback objects.
+     * @param callback Object implementing the MetaCallback interface.
+     *
+     * @return The MetaCallbackPrx object which can be used to un-register the
+     * callback.
+     */
+    public static MetaCallbackPrx addMetaCallback(
+            MetaPrx meta, ObjectAdapter adapter,
+            MetaCallback callback) throws Exception
+    {
+        MetaCallbackPrx cb = MetaCallbackPrx.uncheckedCast(
+                adapter.addWithUUID(callback));
+
+        meta.addCallback(cb);
+        return cb;
+    }
+
+    /**
      * Helper function to send a new message to the same destination as an
      * existing message.
      * <p>
