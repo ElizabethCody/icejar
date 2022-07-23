@@ -29,8 +29,8 @@ public final class Client {
     private int icePort;
     private String[] iceArgs;
 
-    private Optional<String> serverName = Optional.empty();
-    private Optional<Long> serverID = Optional.empty();
+    private String serverName;
+    private Long serverID;
     private Toml config;
 
     private Map<File, Module> enabledModules = new HashMap<File, Module>();
@@ -38,7 +38,7 @@ public final class Client {
     private Communicator communicator;
     private ObjectAdapter adapter;
     private MetaPrx meta;
-    private Optional<ServerPrx> server;
+    private ServerPrx server;
 
     private Thread connectThread;
 
@@ -48,9 +48,8 @@ public final class Client {
     }
 
     protected void reconfigure(
-            String[] iceArgs, String iceHost, int icePort,
-            Optional<String> iceSecret, Map<File, Module> enabledModules,
-            Optional<String> serverName, Optional<Long> serverID,
+            String[] iceArgs, String iceHost, int icePort, String iceSecret,
+            Map<File, Module> enabledModules, String serverName, Long serverID,
             Toml config) throws java.lang.Exception
     {
         this.iceHost = iceHost;
@@ -73,7 +72,9 @@ public final class Client {
         }
 
         ImplicitContext iceContext = communicator.getImplicitContext();
-        iceContext.put(ICE_CONTEXT_SECRET_VAR, iceSecret.orElse(""));
+        iceContext.put(
+                ICE_CONTEXT_SECRET_VAR,
+                Optional.ofNullable(iceSecret).orElse(""));
 
         // Unload modules which are no longer enabled
         if (this.enabledModules != null) {
@@ -181,29 +182,29 @@ public final class Client {
     }
 
     private void getServerPrx() throws java.lang.Exception {
-        if (serverID.isPresent()) {
-            ServerPrx server = meta.getServer(serverID.get().intValue());
+        if (serverID != null) {
+            ServerPrx server = meta.getServer(serverID.intValue());
             if (server == null) {
-                String errorMsg = String.format("No server with ID %d", serverID.get());
+                String errorMsg = String.format("No server with ID %d", serverID);
                 throw new java.lang.Exception(errorMsg);
-            } else if (serverName.isPresent()) {
+            } else if (serverName != null) {
                 String actualServerName = server.getConf(SERVER_NAME_VAR);
-                if (!serverName.get().equals(actualServerName)) {
+                if (!serverName.equals(actualServerName)) {
                     String errorMsg = String.format("Server with ID `%d` is named \"%s\" instead of \"%s\"",
-                            serverID.get(), actualServerName, serverName.get());
+                            serverID, actualServerName, serverName);
                     throw new java.lang.Exception(errorMsg);
                 }
             }
-            this.server = Optional.of(server);
-        } else if (serverName.isPresent()) {
+            this.server = server;
+        } else if (serverName != null) {
             for (ServerPrx server: meta.getAllServers()) {
-                if (serverName.get().equals(server.getConf(SERVER_NAME_VAR))) {
-                    this.server = Optional.of(server);
+                if (serverName.equals(server.getConf(SERVER_NAME_VAR))) {
+                    this.server = server;
                     break;
                 }
             }
         } else {
-            this.server = Optional.empty();
+            this.server = null;
         }
     }
 

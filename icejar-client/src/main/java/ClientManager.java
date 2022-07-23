@@ -10,7 +10,6 @@ import java.util.Set;
 import java.util.HashSet;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.Optional;
 import java.util.jar.JarFile;
 import java.util.jar.JarEntry;
 import java.net.URLClassLoader;
@@ -118,8 +117,7 @@ public final class ClientManager {
                     String iceHost = config.getString(ICE_HOST_VAR);
                     int icePort = config.getLong(ICE_PORT_VAR).intValue();
 
-                    Optional<String> iceSecret = Optional.ofNullable(
-                            config.getString(ICE_SECRET_VAR));
+                    String iceSecret = config.getString(ICE_SECRET_VAR);
 
                     List<String> enabledModuleNames = config.getList(
                             ENABLED_MODULES_VAR, new ArrayList<String>());
@@ -140,10 +138,8 @@ public final class ClientManager {
                     Map<File, Module> enabledModules = moduleMapFromClassMap(
                             enabledModuleClasses);
 
-                    Optional<String> serverName = Optional.ofNullable(
-                            config.getString(SERVER_NAME_VAR));
-                    Optional<Long> serverID = Optional.ofNullable(
-                            config.getLong(SERVER_ID_VAR));
+                    String serverName = config.getString(SERVER_NAME_VAR);
+                    Long serverID = config.getLong(SERVER_ID_VAR);
 
                     Client client;
 

@@ -1,6 +1,5 @@
 package icejar;
 
-import java.util.Optional;
 import java.util.Map;
 
 import com.zeroc.Ice.ObjectAdapter;
@@ -38,7 +37,7 @@ public interface Module {
      */
     abstract void setup(
             Map<String, Object> config, MetaPrx meta, ObjectAdapter adapter,
-            Optional<ServerPrx> server) throws Exception;
+            ServerPrx server) throws Exception;
 
     /**
      * Clean up a Module when it is unloaded.
