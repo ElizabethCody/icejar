@@ -350,8 +350,7 @@ public final class ClientManager {
 
     private static void updateModuleClasses(Set<File> changedModuleFiles) {
         for (File changedModuleFile: changedModuleFiles) {
-            try {
-                JarFile jar = new JarFile(changedModuleFile);
+            try (JarFile jar = new JarFile(changedModuleFile)) {
 
                 URL moduleFileURL = changedModuleFile.toURI().toURL();
                 URL[] urls = { moduleFileURL };
