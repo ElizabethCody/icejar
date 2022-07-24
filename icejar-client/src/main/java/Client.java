@@ -1,7 +1,5 @@
 package icejar;
 
-import static icejar.ClientManager.*;
-
 import java.io.File;
 import java.util.Optional;
 import java.util.OptionalInt;
@@ -243,8 +241,13 @@ public final class Client {
         for (Map.Entry<File, Module> moduleEntry: enabledModules.entrySet()) {
             File moduleFile = moduleEntry.getKey();
             String moduleFileName = moduleFile.getName();
-            int moduleNameEndIndex = moduleFileName.length() - MODULE_EXTENSION.length();
-            String moduleName = moduleFileName.substring(0, moduleNameEndIndex);
+            String moduleName = moduleFileName;
+
+            int moduleNameEndIndex = moduleFileName.lastIndexOf('.');
+            if (moduleNameEndIndex != -1) {
+                moduleName = moduleFileName.substring(0, moduleNameEndIndex);
+            }
+
             Module module = moduleEntry.getValue();
 
             if (module != null) {

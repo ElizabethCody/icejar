@@ -29,9 +29,9 @@ public final class ClientManager {
     private static final String MODULE_DIR_OPT = "-m";
     private static final String PRINT_STACK_TRACE_OPT = "-d";
 
-    protected static final String SERVER_CONFIG_EXTENSION = ".toml";
-    protected static final String MODULE_EXTENSION = ".jar";
-    protected static final String CLASS_EXTENSION = ".class";
+    private static final String SERVER_CONFIG_EXTENSION = ".toml";
+    private static final String MODULE_EXTENSION = ".jar";
+    private static final String CLASS_EXTENSION = ".class";
 
     // server config field names
     private static final String ICE_ARGS_VAR = "ice_args";
@@ -55,6 +55,8 @@ public final class ClientManager {
     // Map config files to Client objects
     private static Map<File, Client> clientMap = new HashMap<File, Client>();
 
+
+    private ClientManager() {}
 
     public static void main(String[] args) {
         parseArgs(args);
