@@ -77,7 +77,6 @@ public final class Client {
         // Unload modules which are no longer enabled
         if (this.enabledModules != null) {
             for (File module: this.enabledModules.keySet()) {
-                System.out.println(module);
                 if (!enabledModules.containsKey(module)) {
                     unloadModule(module);
                 }
