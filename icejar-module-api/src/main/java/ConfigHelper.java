@@ -28,6 +28,10 @@ public final class ConfigHelper {
     /** Parse a record of the given Class from the given Map.
      * Record member names will be translated from camelCase to snake_case
      * for the purpose of reading their values from the map.
+     *
+     * For example, given a record class with a member called `serverName`,
+     * the parseConfig method will attempt to parse the value of `server_name`
+     * from the given configuration map.
      */
     public static <R extends Record> R parseConfig(
             Map<String, Object> config, Class<R> cls) throws Exception

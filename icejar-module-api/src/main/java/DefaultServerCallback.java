@@ -7,7 +7,8 @@ import com.zeroc.Ice.Current;
  * without having to define an implementation for every event.
  * <p>
  * Each event type has both a variant which does and does not throw an
- * exception of which only one should be implemented.
+ * exception. If an exception-throwing method is implemented, then its non
+ * exception-throwing equivalent <b>must not</b> also be implemeted.
  * <p>
  * See <code>com.zeroc.Ice.ServerCallback</code> for documentation.
  */
