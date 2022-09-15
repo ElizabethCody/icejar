@@ -145,9 +145,7 @@ public final class Client {
 
     private void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
-        System.out.println(proxyString);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
-        System.out.println(meta);
 
         String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
