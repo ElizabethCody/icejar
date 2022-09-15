@@ -362,13 +362,20 @@ public final class ClientManager {
                     if (className.endsWith(CLASS_EXTENSION)) {
                         className = className.substring(
                                 0, className.length() - CLASS_EXTENSION.length());
-                        Class moduleClass = Class.forName(
-                                className, true, classLoader);
 
-                        if (Module.class.isAssignableFrom(moduleClass)) {
-                            moduleClasses.put(changedModuleFile, moduleClass);
-                            break;
-                        }
+                        // The classes loaded from module JAR files might use
+                        // classes that aren't available to the current
+                        // ClassLoader. If this is the case, we just skip
+                        // trying to load the class.
+                        try {
+                            Class moduleClass = Class.forName(
+                                    className, true, classLoader);
+
+                            if (Module.class.isAssignableFrom(moduleClass)) {
+                                moduleClasses.put(changedModuleFile, moduleClass);
+                                break;
+                            }
+                        } catch (NoClassDefFoundError e) {}
                     }
                 }
             } catch (Exception e) {
