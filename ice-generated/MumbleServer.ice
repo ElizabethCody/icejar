@@ -13,7 +13,7 @@
 
 #include <Ice/SliceChecksumDict.ice>
 
-module Murmur
+module MumbleServer
 {
 
 	/** A network address in IPv6 format.
@@ -49,8 +49,10 @@ module Murmur
 		int onlinesecs;
 		/** Average transmission rate in bytes per second over the last few seconds. */
 		int bytespersec;
-		/** Client version. Major version in upper 16 bits, followed by 8 bits of minor version and 8 bits of patchlevel. Version 1.2.3 = 0x010203. */
+		/** Legacy client version. */
 		int version;
+		/** New client version. (See https://github.com/mumble-voip/mumble/issues/5827) */
+		long version2;
 		/** Client release. For official releases, this equals the version. For snapshots and git compiles, this will be something else. */
 		string release;
 		/** Client OS. */
@@ -823,6 +825,20 @@ module Murmur
 		  * @returns An ID-list of users listening to the given channel
 		  */
 		 idempotent IntList getListeningUsers(int channelid);
+
+		 /**
+		  * @param channelid The ID of the channel
+		  * @param userid The ID of the user
+		  * @returns The volume adjustment set for a listener of the given user in the given channel
+		  */
+		 idempotent float getListenerVolumeAdjustment(int channelid, int userid);
+
+		 /**
+		  * Sets the volume adjustment set for a listener of the given user in the given channel
+		  * @param channelid The ID of the channel
+		  * @param userid The ID of the user
+		  */
+		 idempotent void setListenerVolumeAdjustment(int channelid, int userid, float volumeAdjustment);
 
 		 /**
 		  * @param receiverUserIDs list of IDs of the users the message shall be sent to

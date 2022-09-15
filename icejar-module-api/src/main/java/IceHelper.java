@@ -1,7 +1,7 @@
 package icejar;
 
 import com.zeroc.Ice.ObjectAdapter;
-import Murmur.*;
+import MumbleServer.*;
 
 public final class IceHelper {
     private IceHelper() {}

@@ -9,7 +9,7 @@ import java.util.Set;
 
 import com.moandjiezana.toml.Toml;
 import com.zeroc.Ice.*;
-import Murmur.*;
+import MumbleServer.*;
 
 
 // Ice client for a single virtual mumble server
@@ -145,7 +145,9 @@ public final class Client {
 
     private void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
+        System.out.println(proxyString);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
+        System.out.println(meta);
 
         String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);

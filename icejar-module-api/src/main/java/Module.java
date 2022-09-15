@@ -3,7 +3,7 @@ package icejar;
 import java.util.Map;
 
 import com.zeroc.Ice.ObjectAdapter;
-import Murmur.*;
+import MumbleServer.*;
 
 /**
  * Modules must be <code>.jar</code> files containing a class named "Module"

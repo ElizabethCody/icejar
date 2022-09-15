@@ -1,6 +1,6 @@
 package icejar;
 
-import Murmur.*;
+import MumbleServer.*;
 import com.zeroc.Ice.Current;
 
 /** This interface is provided to allow the implementation of Ice callbacks

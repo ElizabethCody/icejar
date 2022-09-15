@@ -13,14 +13,14 @@ dependencies {
 
 slice {
     java {
-        files = [file('./Murmur.ice')]
+        files = [file('./MumbleServer.ice')]
     }
 }
 
 sourceSets {
     main {
         java {
-            srcDir './build/generated-src/Murmur'
+            srcDir './build/generated-src/MumbleServer'
         }
     }
 }
