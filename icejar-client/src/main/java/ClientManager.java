@@ -12,6 +12,9 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.jar.JarFile;
 import java.util.jar.JarEntry;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.net.URLClassLoader;
 import java.net.URL;
 import java.nio.file.WatchService;
@@ -27,7 +30,6 @@ public final class ClientManager {
     // Define accepted command line options
     private static final String SERVER_CONFIG_DIR_OPT = "-s";
     private static final String MODULE_DIR_OPT = "-m";
-    private static final String PRINT_STACK_TRACE_OPT = "-d";
 
     private static final String SERVER_CONFIG_EXTENSION = ".toml";
     private static final String MODULE_EXTENSION = ".jar";
@@ -55,12 +57,18 @@ public final class ClientManager {
     // Map config files to Client objects
     private static Map<File, Client> clientMap = new HashMap<File, Client>();
 
+    private static LogManager logManager;
+    private static Logger logger;
+
 
     private ClientManager() {}
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
+        setupLogging();
+        logger.info("Starting Icejar");
+
         parseArgs(args);
-        Runtime.getRuntime().addShutdownHook(new Thread(ClientManager::cleanupClients));
+        Runtime.getRuntime().addShutdownHook(new Thread(ClientManager::cleanup));
 
         updateClientsAndModules();
 
@@ -78,21 +86,29 @@ public final class ClientManager {
                 key.reset();
             }
         } catch (Exception e) {
-            System.err.println(String.format("Falling back to polling after Watcher service threw: `%s`", e));
+            logger.warning(String.format("""
+                        Watcher service threw: `%s`. Falling back to checking \
+                        for module/configuration changes every 5 seconds.
+                        """, e));
+
             while (true) {
-                try {
-                    Thread.sleep(5000);
-                } catch (Exception e2) {
-                    e2.printStackTrace(System.err);
-                }
+                Thread.sleep(5000);
                 updateClientsAndModules();
             }
         }
     }
 
 
+    private static void setupLogging() {
+        logManager = LogManager.getLogManager();
+        logger = Logger.getLogger("icejar");
+        logManager.addLogger(logger);
+    }
+
     private static void updateClientsAndModules() {
+        // Update modules (if they changed)
         updateModules();
+        // Update clients (if they changed)
         updateClients();
     }
 
@@ -148,7 +164,10 @@ public final class ClientManager {
                     if (clientMap.containsKey(changedServerConfigFile)) {
                         client = clientMap.get(changedServerConfigFile);
                     } else {
-                        client = new Client(changedServerConfigFile);
+                        Logger clientLogger = Logger.getLogger("icejar.client." + changedServerConfigFile);
+                        logManager.addLogger(clientLogger);
+
+                        client = new Client(changedServerConfigFile, clientLogger);
                         clientMap.put(changedServerConfigFile, client);
                     }
 
@@ -156,8 +175,7 @@ public final class ClientManager {
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
-                    ExceptionLogger.print(
-                            "loading server config file", changedServerConfigFile, e);
+                    logger.log(Level.WARNING, "Loading server config file threw:", e);
                 }
             } else {
                 // If the file was removed, clean up the client and remove it.
@@ -176,6 +194,7 @@ public final class ClientManager {
         updateLastModifiedTimes(changedModuleFiles);
         updateModuleClasses(changedModuleFiles);
 
+        // Tell existing clients about the modules which must be reloaded
         for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
             Client client = clientEntry.getValue();
 
@@ -183,7 +202,7 @@ public final class ClientManager {
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
                     Class moduleClass = moduleClasses.get(changedModuleFile);
-                    Module module = instanceModuleClass(moduleClass);
+                    Module module = instanceModuleClass(moduleClass, changedModuleFile);
                     modulesToReload.put(changedModuleFile, module);
                 }
             }
@@ -202,7 +221,7 @@ public final class ClientManager {
         }
     }
 
-    private static Module instanceModuleClass(Class<?> moduleClass) {
+    private static Module instanceModuleClass(Class<?> moduleClass, File moduleFile) {
         if (moduleClass == null) {
             return null;
         }
@@ -210,9 +229,14 @@ public final class ClientManager {
         try {
             Object moduleObj = moduleClass.getDeclaredConstructor().newInstance();
             Module module = Module.class.cast(moduleObj);
+
+            Logger moduleLogger = Logger.getLogger("icejar.module." + moduleFile);
+            logManager.addLogger(moduleLogger);
+            module.setLogger(moduleLogger);
+
             return module;
         } catch (Exception e) {
-            ExceptionLogger.print("instancing `Module` class for", moduleClass, e);
+            logger.log(Level.WARNING, "Intantiating `Module` class for " + moduleClass + " threw:", e);
             return null;
         }
     }
@@ -226,7 +250,7 @@ public final class ClientManager {
             File moduleFile = classEntry.getKey();
             Class<?> moduleClass = classEntry.getValue();
 
-            moduleMap.put(moduleFile, instanceModuleClass(moduleClass));
+            moduleMap.put(moduleFile, instanceModuleClass(moduleClass, moduleFile));
         }
 
         return moduleMap;
@@ -243,10 +267,6 @@ public final class ClientManager {
 
                 case MODULE_DIR_OPT:
                     moduleDir = new File(args[i + 1]);
-                    break;
-
-                case PRINT_STACK_TRACE_OPT:
-                    ExceptionLogger.setPrintStackTrace(Boolean.valueOf(args[i + 1]));
                     break;
             }
         }
@@ -379,10 +399,15 @@ public final class ClientManager {
                     }
                 }
             } catch (Exception e) {
-                ExceptionLogger.print("loading Module from", changedModuleFile, e);
+                logger.log(Level.WARNING, "Loading `Module` class from " + changedModuleFile + " threw:", e);
                 moduleClasses.remove(changedModuleFile);
             }
         }
+    }
+
+    private static void cleanup() {
+        logger.info("Cleaning up active clients and shutting down...");
+        cleanupClients();
     }
 
     private static void cleanupClients() {

@@ -6,6 +6,8 @@ import java.util.OptionalInt;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Set;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import com.moandjiezana.toml.Toml;
 import com.zeroc.Ice.*;
@@ -16,6 +18,8 @@ import MumbleServer.*;
 public final class Client {
     private static final String ICE_CONTEXT_SECRET_VAR = "secret";
     private static final String SERVER_NAME_VAR = "registerName";
+
+    private Logger logger;
 
     private File configFile;
 
@@ -41,8 +45,9 @@ public final class Client {
     private Thread connectThread;
 
 
-    protected Client(File configFile) {
+    protected Client(File configFile, Logger logger) {
         this.configFile = configFile;
+        this.logger = logger;
     }
 
     protected void reconfigure(
@@ -97,9 +102,7 @@ public final class Client {
             try {
                 connectThread.join();
             } catch (InterruptedException e) {
-                ExceptionLogger.print(
-                        "Waiting for previous connection thread of Client for",
-                        configFile, e);
+                logger.log(Level.FINE, "Waiting for previous connection thread of `Client` for " + configFile + " to exit threw:", e);
                 return;
             }
         }
@@ -108,8 +111,7 @@ public final class Client {
             try {
                 this.reconnect();
             } catch (java.lang.Exception e) {
-                ExceptionLogger.print(
-                        "Connection thread of Client for", configFile, e);
+                logger.log(Level.WARNING, "Connection thread of `Client` for " + configFile + " threw:", e);
             }
         });
 
@@ -117,7 +119,7 @@ public final class Client {
     }
 
     private void reconnect() throws java.lang.Exception {
-        System.out.println(String.format("Connection attempt of Client for `%s` started", configFile));
+        logger.info(String.format("Connection attempt of `Client` for `%s` started.", configFile));
 
         reconnectDelay = MIN_RECONNECT_DELAY;
 
@@ -128,7 +130,7 @@ public final class Client {
                 setup();
                 break;
             } catch (java.lang.Exception e) {
-                ExceptionLogger.print("Connection attempt of Client for", configFile, e);
+                logger.log(Level.FINE, "Connection attempt of `Client` for " + configFile + " threw:", e);
                 if (e instanceof OperationInterruptedException) {
                     break;
                 }
@@ -147,6 +149,11 @@ public final class Client {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
+        // NOTE: Mumble re-named its Ice module from "Murmur" to "MumbleServer"
+        // If you try to connect to a Mumble server which was built against the
+        // old Ice module with a build of icejar which uses the new module or
+        // vice-versa, the call to `MetaPrx.checkedCast` will return `null`.
+
         String adapterString = String.format("tcp -h %s", iceHost);
         adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
         adapter.activate();
@@ -162,7 +169,7 @@ public final class Client {
 
         getServerPrx();
 
-        System.out.println(String.format("Client for `%s` connected", configFile));
+        logger.info(String.format("`Client` for `%s` connected", configFile));
     }
 
     private void disconnect() {
@@ -211,7 +218,7 @@ public final class Client {
             File changedModuleFile = changedModuleEntry.getKey();
             Module changedModule = changedModuleEntry.getValue();
 
-            System.out.println(String.format("Reloading `%s` for `%s`", changedModuleFile, configFile));
+            logger.fine(String.format("Reloading `%s` for `%s`", changedModuleFile, configFile));
 
             unloadModule(changedModuleFile);
             enabledModules.put(changedModuleFile, changedModule);
@@ -229,7 +236,7 @@ public final class Client {
                         module.cleanup();
                     }
                 } catch (java.lang.Exception e) {
-                    ExceptionLogger.print("`cleanup()` for `Module` from", moduleFile, e);
+                    logger.log(Level.WARNING, "Call to `cleanup()` for `Module` from " + moduleFile + " threw:", e);
                 }
             }
 
@@ -264,14 +271,14 @@ public final class Client {
                         module.setup(moduleConfig, meta, adapter, server);
                     }
                 } catch (java.lang.Exception e) {
-                    ExceptionLogger.print("`setup()` for `Module` from", moduleFile, e);
+                    logger.log(Level.WARNING, "Call to `setup()` for `Module` from " + moduleFile + " threw:", e);
                 }
             }
         }
     }
 
     protected void cleanup() {
-        System.out.println(String.format("Cleaning up Client for `%s`", configFile));
+        logger.fine(String.format("Cleaning up `Client` for `%s`", configFile));
 
         for (File moduleFile: enabledModules.keySet()) {
             unloadModule(moduleFile);

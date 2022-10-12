@@ -1,6 +1,7 @@
 package icejar;
 
 import java.util.Map;
+import java.util.logging.Logger;
 
 import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
@@ -47,4 +48,19 @@ public interface Module {
      * not require any implementation of this method.
      */
     default void cleanup() throws Exception {}
+
+    /**
+     * Receive Logger instance for this module.
+     * <p>
+     * If your Module needs to log messages, instead of acquiring a Logger
+     * itself, it is preferrable to override this method and use the Logger
+     * passed in.
+     * <p>
+     * This method is called only once. It is called after the Module is
+     * constructed and before any call to <code>setup()</code> or
+     * <code>cleanup()</code>.
+     *
+     * @param logger The given logger for this Module.
+     */
+    default void setLogger(Logger logger) {}
 }
