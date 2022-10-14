@@ -2,6 +2,9 @@ package icejar;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -12,9 +15,11 @@ import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.jar.JarFile;
 import java.util.jar.JarEntry;
+import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.Properties;
 import java.net.URLClassLoader;
 import java.net.URL;
 import java.nio.file.WatchService;
@@ -30,6 +35,7 @@ public final class ClientManager {
     // Define accepted command line options
     private static final String SERVER_CONFIG_DIR_OPT = "-s";
     private static final String MODULE_DIR_OPT = "-m";
+    private static final String VERBOSE_OPT = "-v";
 
     private static final String SERVER_CONFIG_EXTENSION = ".toml";
     private static final String MODULE_EXTENSION = ".jar";
@@ -154,7 +160,7 @@ public final class ClientManager {
                         }
                     }
                     Map<File, Module> enabledModules = moduleMapFromClassMap(
-                            enabledModuleClasses);
+                            enabledModuleClasses, changedServerConfigFile);
 
                     String serverName = config.getString(SERVER_NAME_VAR);
                     Long serverID = config.getLong(SERVER_ID_VAR);
@@ -164,7 +170,9 @@ public final class ClientManager {
                     if (clientMap.containsKey(changedServerConfigFile)) {
                         client = clientMap.get(changedServerConfigFile);
                     } else {
-                        Logger clientLogger = Logger.getLogger("icejar.client." + changedServerConfigFile);
+                        Logger clientLogger = Logger.getLogger(
+                                "icejar.client."
+                                + serverConfigFileName(changedServerConfigFile));
                         logManager.addLogger(clientLogger);
 
                         client = new Client(changedServerConfigFile, clientLogger);
@@ -196,13 +204,15 @@ public final class ClientManager {
 
         // Tell existing clients about the modules which must be reloaded
         for (Map.Entry<File, Client> clientEntry: clientMap.entrySet()) {
+            File serverConfigFile = clientEntry.getKey();
             Client client = clientEntry.getValue();
 
             Map<File, Module> modulesToReload = new HashMap<File, Module>();
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
                     Class moduleClass = moduleClasses.get(changedModuleFile);
-                    Module module = instanceModuleClass(moduleClass, changedModuleFile);
+                    Module module = instanceModuleClass(
+                            moduleClass, changedModuleFile, serverConfigFile);
                     modulesToReload.put(changedModuleFile, module);
                 }
             }
@@ -221,7 +231,29 @@ public final class ClientManager {
         }
     }
 
-    private static Module instanceModuleClass(Class<?> moduleClass, File moduleFile) {
+    private static String stripPrefixAndSuffix(
+            String s, String prefix, String suffix)
+    {
+        return s.substring(prefix.length(), s.length() - suffix.length());
+    }
+
+    private static String serverConfigFileName(File serverConfigFile) {
+        return stripPrefixAndSuffix(
+                serverConfigFile.toString(),
+                serverConfigDir.toString() + "/",
+                SERVER_CONFIG_EXTENSION);
+    }
+
+    private static String moduleFileName(File moduleFile) {
+        return stripPrefixAndSuffix(
+                moduleFile.toString(),
+                moduleDir.toString() + "/",
+                MODULE_EXTENSION);
+    }
+
+    private static Module instanceModuleClass(
+            Class<?> moduleClass, File moduleFile, File serverConfigFile)
+    {
         if (moduleClass == null) {
             return null;
         }
@@ -230,7 +262,9 @@ public final class ClientManager {
             Object moduleObj = moduleClass.getDeclaredConstructor().newInstance();
             Module module = Module.class.cast(moduleObj);
 
-            Logger moduleLogger = Logger.getLogger("icejar.module." + moduleFile);
+            Logger moduleLogger = Logger.getLogger(
+                    "icejar.client." + serverConfigFileName(serverConfigFile)
+                    + ".module." + moduleFileName(moduleFile));
             logManager.addLogger(moduleLogger);
             module.setLogger(moduleLogger);
 
@@ -242,7 +276,7 @@ public final class ClientManager {
     }
 
     private static Map<File, Module> moduleMapFromClassMap(
-            Map<File, Class> classMap)
+            Map<File, Class> classMap, File serverConfigFile)
     {
         Map<File, Module> moduleMap = new HashMap<File, Module>();
 
@@ -250,7 +284,9 @@ public final class ClientManager {
             File moduleFile = classEntry.getKey();
             Class<?> moduleClass = classEntry.getValue();
 
-            moduleMap.put(moduleFile, instanceModuleClass(moduleClass, moduleFile));
+            moduleMap.put(
+                    moduleFile,
+                    instanceModuleClass(moduleClass, moduleFile, serverConfigFile));
         }
 
         return moduleMap;
@@ -258,15 +294,35 @@ public final class ClientManager {
 
 
     private static void parseArgs(String[] args) {
-        for (int i = 0; i < args.length; i += 2) {
+        for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
 
                 case SERVER_CONFIG_DIR_OPT:
                     serverConfigDir = new File(args[i + 1]);
+                    i++;
                     break;
 
                 case MODULE_DIR_OPT:
                     moduleDir = new File(args[i + 1]);
+                    i++;
+                    break;
+
+                case VERBOSE_OPT:
+                    Properties p = new Properties();
+                    for (Handler handler: logManager.getLogger("").getHandlers()) {
+                        p.setProperty(handler.getClass().getName() + ".level", "FINEST");
+                    }
+                    p.setProperty(".level", "FINEST");
+                    p.setProperty("handlers", logManager.getProperty("handlers"));
+
+                    try {
+                        ByteArrayOutputStream s = new ByteArrayOutputStream();
+                        p.store(s, "");
+                        logManager.readConfiguration(
+                                new ByteArrayInputStream(s.toByteArray()));
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
                     break;
             }
         }
@@ -398,8 +454,10 @@ public final class ClientManager {
                         } catch (NoClassDefFoundError e) {}
                     }
                 }
-            } catch (Exception e) {
-                logger.log(Level.WARNING, "Loading `Module` class from " + changedModuleFile + " threw:", e);
+            } catch (ClassNotFoundException e) {
+                logger.log(Level.WARNING, "No `Module` class in `" + changedModuleFile + "`:", e);
+            } catch (IOException e) {
+                logger.log(Level.WARNING, "Reading JAR file `" + changedModuleFile + "` threw:", e);
                 moduleClasses.remove(changedModuleFile);
             }
         }

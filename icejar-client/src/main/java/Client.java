@@ -102,7 +102,7 @@ public final class Client {
             try {
                 connectThread.join();
             } catch (InterruptedException e) {
-                logger.log(Level.FINE, "Waiting for previous connection thread of `Client` for " + configFile + " to exit threw:", e);
+                logger.log(Level.FINE, "Waiting for previous connection thread of `Client` for `" + configFile + "` to exit threw:", e);
                 return;
             }
         }
@@ -111,7 +111,7 @@ public final class Client {
             try {
                 this.reconnect();
             } catch (java.lang.Exception e) {
-                logger.log(Level.WARNING, "Connection thread of `Client` for " + configFile + " threw:", e);
+                logger.log(Level.WARNING, "Connection thread of `Client` for `" + configFile + "` threw:", e);
             }
         });
 
@@ -129,11 +129,10 @@ public final class Client {
                 attemptConnection();
                 setup();
                 break;
+            } catch (OperationInterruptedException e) {
+                break;
             } catch (java.lang.Exception e) {
-                logger.log(Level.FINE, "Connection attempt of `Client` for " + configFile + " threw:", e);
-                if (e instanceof OperationInterruptedException) {
-                    break;
-                }
+                logger.log(Level.FINE, "Connection attempt of `Client` for `" + configFile + "` threw:" + e);
 
                 if (reconnectDelay < MAX_RECONNECT_DELAY) {
                     Thread.sleep(reconnectDelay);
@@ -236,7 +235,7 @@ public final class Client {
                         module.cleanup();
                     }
                 } catch (java.lang.Exception e) {
-                    logger.log(Level.WARNING, "Call to `cleanup()` for `Module` from " + moduleFile + " threw:", e);
+                    logger.log(Level.WARNING, "Call to `cleanup()` for `Module` from `" + moduleFile + "` threw:", e);
                 }
             }
 
@@ -271,7 +270,7 @@ public final class Client {
                         module.setup(moduleConfig, meta, adapter, server);
                     }
                 } catch (java.lang.Exception e) {
-                    logger.log(Level.WARNING, "Call to `setup()` for `Module` from " + moduleFile + " threw:", e);
+                    logger.log(Level.WARNING, "Call to `setup()` for `Module` from `" + moduleFile + "` threw:", e);
                 }
             }
         }
