@@ -6,10 +6,11 @@ connection, the modules to enable, and an optional configuration for each
 enabled module.
 
 # Usage
-There are 2 accepted command line arguments.
+There are 3 accepted command line arguments.
 
 * `-s path/to/server/config/directory` (defaults to `./servers`)
 * `-m path/to/module/directory` (defaults to `./modules`)
+* `-v` enable verbose output
 
 # Configuration
 Server configuration files use the [TOML](https://toml.io) format. Their file
