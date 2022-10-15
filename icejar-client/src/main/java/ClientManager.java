@@ -71,7 +71,7 @@ public final class ClientManager {
 
     public static void main(String[] args) throws Exception {
         setupLogging();
-        logger.info("Starting Icejar");
+        logger.info("Starting Icejar.");
 
         parseArgs(args);
         Runtime.getRuntime().addShutdownHook(new Thread(ClientManager::cleanup));
@@ -105,10 +105,18 @@ public final class ClientManager {
     }
 
 
+    private static void setLogFormatter() {
+        LogFormatter f = new LogFormatter();
+        for (Handler handler: logManager.getLogger("").getHandlers()) {
+            handler.setFormatter(f);
+        }
+    }
+
     private static void setupLogging() {
         logManager = LogManager.getLogManager();
         logger = Logger.getLogger("icejar");
         logManager.addLogger(logger);
+        setLogFormatter();
     }
 
     private static void updateClientsAndModules() {
@@ -323,6 +331,8 @@ public final class ClientManager {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
+
+                    setLogFormatter();
                     break;
             }
         }
