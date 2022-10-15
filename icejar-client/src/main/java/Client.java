@@ -168,7 +168,7 @@ public final class Client {
 
         getServerPrx();
 
-        logger.info(String.format("`Client` for `%s` connected", configFile));
+        logger.info(String.format("`Client` for `%s` connected.", configFile));
     }
 
     private void disconnect() {
