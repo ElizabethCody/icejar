@@ -102,7 +102,7 @@ public final class Client {
             try {
                 connectThread.join();
             } catch (InterruptedException e) {
-                logger.log(Level.FINE, "Waiting for previous connection thread of `Client` for `" + configFile + "` to exit threw:", e);
+                logger.log(Level.FINE, "Waiting for previous connection thread to exit threw:", e);
                 return;
             }
         }
@@ -111,7 +111,7 @@ public final class Client {
             try {
                 this.reconnect();
             } catch (java.lang.Exception e) {
-                logger.log(Level.WARNING, "Connection thread of `Client` for `" + configFile + "` threw:", e);
+                logger.log(Level.WARNING, "Connection thread threw:", e);
             }
         });
 
@@ -119,7 +119,7 @@ public final class Client {
     }
 
     private void reconnect() throws java.lang.Exception {
-        logger.info(String.format("Connection attempt of `Client` for `%s` started.", configFile));
+        logger.info("Connecting...");
 
         reconnectDelay = MIN_RECONNECT_DELAY;
 
@@ -132,7 +132,7 @@ public final class Client {
             } catch (OperationInterruptedException e) {
                 break;
             } catch (java.lang.Exception e) {
-                logger.log(Level.FINE, "Connection attempt of `Client` for `" + configFile + "` threw:" + e);
+                logger.log(Level.FINE, "Connection attempt threw:" + e);
 
                 if (reconnectDelay < MAX_RECONNECT_DELAY) {
                     Thread.sleep(reconnectDelay);
@@ -168,7 +168,7 @@ public final class Client {
 
         getServerPrx();
 
-        logger.info(String.format("`Client` for `%s` connected.", configFile));
+        logger.info("Connected.");
     }
 
     private void disconnect() {
@@ -217,7 +217,7 @@ public final class Client {
             File changedModuleFile = changedModuleEntry.getKey();
             Module changedModule = changedModuleEntry.getValue();
 
-            logger.fine(String.format("Reloading `%s` for `%s`", changedModuleFile, configFile));
+            logger.fine(String.format("Reloading `%s`", changedModuleFile));
 
             unloadModule(changedModuleFile);
             enabledModules.put(changedModuleFile, changedModule);
@@ -277,7 +277,7 @@ public final class Client {
     }
 
     protected void cleanup() {
-        logger.fine(String.format("Cleaning up `Client` for `%s`", configFile));
+        logger.fine("Cleaning up.");
 
         for (File moduleFile: enabledModules.keySet()) {
             unloadModule(moduleFile);

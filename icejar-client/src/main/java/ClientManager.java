@@ -191,7 +191,7 @@ public final class ClientManager {
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
-                    logger.log(Level.WARNING, "Loading server config file threw:", e);
+                    logger.log(Level.WARNING, "Parsing `" + changedServerConfigFile + "` threw:", e);
                 }
             } else {
                 // If the file was removed, clean up the client and remove it.
