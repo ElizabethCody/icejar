@@ -102,6 +102,14 @@ The `Module` interface defines two methods which can be overridden:
   some additional clean-up procedure. Callbacks registered using Ice are cleaned
   up automatically and do not require an implementation of this method.
 
+* `setLogger`: This method is only called once, immediately after a module is
+  instantiated and before any calls to `setup`. It does not have to be
+  overridden. `setLogger` is called with a single argment: an instance of
+  [`java.util.logging.Logger`](https://docs.oracle.com/en/java/javase/17/docs/api/java.logging/java/util/logging/Logger.html)
+  Using the `Logger` is preferable to using print statements because logged
+  messages will automatically be timestamped and display both the module and
+  mumble server connection from which the messages originate.
+
 Implementors of `Module` *must* provide a constructor which accepts no arguments,
 either by keeping the default constructor or explicitly defining its equivalent.
 
@@ -109,6 +117,10 @@ More information is available in the generated documentation for the
 `icejar-module-api ` and `ice-generated` sub-projects. You can generate this
 documentation by running `gradle javadoc` from the project root.
 
+The generated documentation will be produced at
+`icejar-module-api/build/docs/javadoc/`
+and `ice-generated/build/docs/javadoc/`.
+
 ## Compling Modules
 To compile modules, add the JAR file located at
-`interfaces/build/MumbleIceInterfaces.jar` to the class path. 
+`icejar-module-api/build/MumbleIceModuleAPI.jar` to the class path. 
