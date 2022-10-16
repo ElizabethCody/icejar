@@ -7,10 +7,11 @@ import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
 
 /**
- * Modules must be <code>.jar</code> files containing a class named "Module"
- * at the top level which extends this abstract class.
+ * Modules must be <code>.jar</code> files containing an implementor of the
+ * `Module` interface. Only a single implementor of `Module` will be instanced
+ * from each <code>.jar</code> file by IceJar.
  * <p>
- * Implementations of Module must provide the default contstructor, i.e.
+ * Implementations of `Module` must provide the default contstructor, i.e.
  * <code>new Module()</code> must be a valid way of creating an instance.
  * <p>
  * Be aware that instances of Module will be accessed from different threads:
