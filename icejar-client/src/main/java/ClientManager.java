@@ -135,9 +135,16 @@ public final class ClientManager {
 
         for (File changedServerConfigFile: changedServerConfigFiles) {
             if (changedServerConfigFile.exists()) {
-                try {
-                    Toml config = new Toml().read(changedServerConfigFile);
-                    
+                try {    
+                    Toml defaults = new Toml().read(
+                            ICE_ARGS_VAR + " = []\n"
+                            + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
+                            + ICE_PORT_VAR + " = 6502\n"
+                            + ENABLED_MODULES_VAR + " = []\n"
+                            + SERVER_ID_VAR + " = 1\n");
+                    Toml overrides = new Toml().read(changedServerConfigFile);
+                    Toml config = new Toml(defaults).read(overrides);
+
                     Boolean enabled = config.getBoolean(ENABLED_VAR);
                     // if `enabled` is defined AND false
                     if (enabled != null && !enabled) {
@@ -191,7 +198,7 @@ public final class ClientManager {
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
-                    logger.log(Level.WARNING, "Parsing `" + changedServerConfigFile + "` threw:", e);
+                    logger.log(Level.WARNING, "Parsing `" + changedServerConfigFile + "` threw: " + e.getMessage());
                 }
             } else {
                 // If the file was removed, clean up the client and remove it.
