@@ -21,8 +21,8 @@ Additionally, Ice should be secured with a passphrase via the following
 settings in the Mumble server's INI file:
 
 ```ini
-icesecretread=YOUR-SECRET
-icesecretwrite=YOUR-SECRET
+icesecretread="YOUR-SECRET"
+icesecretwrite="YOUR-SECRET"
 ```
 
 Choose a strong secret to replace `YOUR-SECRET` and use the same secret for
@@ -40,7 +40,7 @@ Before running Icejar, create a directory which contains the following:
 
 * A sub-directory named `servers`.
 * A sub-directory named `modules`.
-* `MumbleIce.jar` (see [chapter 2](building.md))
+* `MumbleIce.jar` (see [Building](building.md))
 
 Icejar can connect to multiple Mumble servers. The details of a connection to a
 Mumble server are written in a TOML file in the `servers` sub-directory.
@@ -51,7 +51,7 @@ sub-directory with the following values:
 ```toml
 ice_host = "127.0.0.1"
 ice_port = 6502
-ice_secret = YOUR-SECRET
+ice_secret = "YOUR-SECRET"
 ```
 
 Replace the values as needed (i.e. replace `YOUR-SECRET` with the actual Ice
