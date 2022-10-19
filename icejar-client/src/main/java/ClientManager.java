@@ -31,7 +31,7 @@ import java.nio.file.Path;
 import com.moandjiezana.toml.Toml;
 
 
-public final class ClientManager {
+final class ClientManager {
     // Define accepted command line options
     private static final String SERVER_CONFIG_DIR_OPT = "-s";
     private static final String MODULE_DIR_OPT = "-m";

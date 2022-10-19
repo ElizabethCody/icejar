@@ -15,7 +15,7 @@ import MumbleServer.*;
 
 
 // Ice client for a single virtual mumble server
-public final class Client {
+final class Client {
     private static final String ICE_CONTEXT_SECRET_VAR = "secret";
     private static final String SERVER_NAME_VAR = "registerName";
 

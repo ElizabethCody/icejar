@@ -6,7 +6,7 @@ import java.util.Date;
 import java.text.SimpleDateFormat;
 
 
-public class LogFormatter extends Formatter {
+final class LogFormatter extends Formatter {
     Date date = new Date();
     SimpleDateFormat d = new SimpleDateFormat("[dd MMM yyyy hh:mm:ss zzz] ");
     StringBuilder s = new StringBuilder();
