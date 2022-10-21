@@ -1,6 +1,7 @@
 package icejar;
 
 import java.io.File;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Map;
@@ -96,6 +97,10 @@ final class Client {
         return enabledModules.containsKey(moduleFile);
     }
 
+    protected Set<File> getEnabledModules() {
+        return Collections.unmodifiableSet(enabledModules.keySet());
+    }
+
     private synchronized void startReconnectThread() {
         if (connectThread != null) {
             connectThread.interrupt();
@@ -119,7 +124,7 @@ final class Client {
     }
 
     private void reconnect() throws java.lang.Exception {
-        logger.info("Connecting...");
+        logger.fine("Re-connecting...");
 
         reconnectDelay = MIN_RECONNECT_DELAY;
 
@@ -177,6 +182,8 @@ final class Client {
         setAutoReconnectEnabled(false);
         if (meta != null) {
             meta.ice_getConnection().close(ConnectionClose.Gracefully);
+            meta = null;
+            logger.info("Disconnected.");
         }
 
         if (adapter != null) {

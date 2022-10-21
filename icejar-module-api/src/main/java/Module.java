@@ -7,6 +7,8 @@ import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
 
 /**
+ * Main interface implemeted by Icejar Modules.
+ *
  * Modules must be <code>.jar</code> files containing an implementor of the
  * `Module` interface. Only a single implementor of `Module` will be instanced
  * from each <code>.jar</code> file by IceJar.
@@ -57,11 +59,29 @@ public interface Module {
      * itself, it is preferrable to override this method and use the Logger
      * passed in.
      * <p>
-     * This method is called only once. It is called after the Module is
-     * constructed and before any call to <code>setup()</code> or
+     * This method is called only once. It is called immediately after the
+     * Module is instatitated and before any call to <code>setup()</code> or
      * <code>cleanup()</code>.
      *
      * @param logger The given logger for this Module.
      */
     default void setLogger(Logger logger) {}
+
+    /**
+     * Receive message passing coordinator for this module.
+     * <p>
+     * If your Module needs to communicate with other modules, Icejar provides
+     * a simple message passing API. The Coordinator object is used to get
+     * instances of Sender and Receiver, from which messages can be sent and
+     * received.
+     * <p>
+     * This method is called only once. It is called immediately after the
+     * Module is instatiated, before any call to <code>setup()</code> or
+     * <code>cleanup()</code>, and after the call to <code>setLogger()</code>.
+     *
+     * @param coordinator The message passing coordinator for this Module.
+     *
+     * @see MessagePassing
+     */
+    default void setupMessagePassing(MessagePassing.Coordinator coordinator) {}
 }

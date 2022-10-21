@@ -6,7 +6,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.RecordComponent;
 
 
-/** Helper methods for loading values from a module's configuration */
+/** Helper methods for loading values from a module's configuration. */
 public final class ConfigHelper {
     private ConfigHelper() {}
 

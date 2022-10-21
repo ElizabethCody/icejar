@@ -3,6 +3,7 @@ package icejar;
 import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
 
+/** Helper methods for using Ice features. */
 public final class IceHelper {
     private IceHelper() {}
 

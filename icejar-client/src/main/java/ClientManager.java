@@ -135,7 +135,7 @@ final class ClientManager {
 
         for (File changedServerConfigFile: changedServerConfigFiles) {
             if (changedServerConfigFile.exists()) {
-                try {    
+                try {
                     Toml defaults = new Toml().read(
                             ICE_ARGS_VAR + " = []\n"
                             + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
@@ -194,6 +194,15 @@ final class ClientManager {
                         clientMap.put(changedServerConfigFile, client);
                     }
 
+                    // Clean up message passing queues & receivers for modules
+                    // which are no longer enabled.
+                    for (File previouslyEnabledModule: client.getEnabledModules()) {
+                        if (!enabledModules.containsKey(previouslyEnabledModule)) {
+                            String moduleName = moduleFileName(previouslyEnabledModule);
+                            MessagePasser.removeModule(serverName, moduleName);
+                        }
+                    }
+
                     client.reconfigure(
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
@@ -222,9 +231,16 @@ final class ClientManager {
             File serverConfigFile = clientEntry.getKey();
             Client client = clientEntry.getValue();
 
+            String serverName = serverConfigFileName(serverConfigFile);
+
             Map<File, Module> modulesToReload = new HashMap<File, Module>();
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
+                    // Clean up message passing queues & receivers from
+                    // previous instance
+                    String moduleName = moduleFileName(changedModuleFile);
+                    MessagePasser.removeModule(serverName, moduleName);
+
                     Class moduleClass = moduleClasses.get(changedModuleFile);
                     Module module = instanceModuleClass(
                             moduleClass, changedModuleFile, serverConfigFile);
@@ -239,6 +255,8 @@ final class ClientManager {
     }
 
     private static void removeClient(File configFile) {
+        MessagePasser.removeServer(serverConfigFileName(configFile));
+
         if (clientMap.containsKey(configFile)) {
             Client client = clientMap.get(configFile);
             client.cleanup();
@@ -273,21 +291,29 @@ final class ClientManager {
             return null;
         }
 
+        Module module = null;
         try {
             Object moduleObj = moduleClass.getDeclaredConstructor().newInstance();
-            Module module = Module.class.cast(moduleObj);
-
-            Logger moduleLogger = Logger.getLogger(
-                    "icejar.client." + serverConfigFileName(serverConfigFile)
-                    + ".module." + moduleFileName(moduleFile));
-            logManager.addLogger(moduleLogger);
-            module.setLogger(moduleLogger);
-
-            return module;
+            module = Module.class.cast(moduleObj);
         } catch (Exception e) {
             logger.log(Level.WARNING, "Intantiating `Module` class for " + moduleClass + " threw:", e);
             return null;
         }
+
+        String serverName = serverConfigFileName(serverConfigFile);
+        String moduleName = moduleFileName(moduleFile);
+
+        Logger moduleLogger = Logger.getLogger(
+                "icejar.client." + serverName + ".module." + moduleName);
+        logManager.addLogger(moduleLogger);
+        module.setLogger(moduleLogger);
+
+        MessagePasser.Coordinator coordinator =
+            MessagePasser.createCoordinator(serverName, moduleName);
+
+        module.setupMessagePassing(coordinator);
+
+        return module;
     }
 
     private static Map<File, Module> moduleMapFromClassMap(
