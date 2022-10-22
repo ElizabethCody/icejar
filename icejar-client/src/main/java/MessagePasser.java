@@ -3,8 +3,6 @@ package icejar;
 import icejar.MessagePassing;
 
 import java.util.Arrays;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.Map;
@@ -16,8 +14,6 @@ import java.lang.reflect.Constructor;
 
 
 final class MessagePasser {
-
-    private static final int QUEUE_SIZE = 100;
 
     private static Map<String, Map<String, Map<String, Receiver<?>>>> receivers = new HashMap<>();
 
@@ -40,8 +36,7 @@ final class MessagePasser {
     protected static synchronized <T> Receiver<T> createReceiver(
             String serverName, String moduleName, String channel, Class<T> cls)
     {
-        BlockingQueue<T> queue = new ArrayBlockingQueue<>(QUEUE_SIZE);
-        Receiver<T> receiver = new Receiver<>(queue, cls);
+        Receiver<T> receiver = new Receiver<>(cls);
 
         createMappingFor(receivers, serverName, moduleName);
         receivers.get(serverName).get(moduleName).put(channel, receiver);
@@ -139,37 +134,17 @@ final class MessagePasser {
     static class Receiver<T> implements MessagePassing.Receiver<T> {
 
         private WeakReference<Consumer<T>> handler;
-        private BlockingQueue<T> queue;
         private Class<T> cls;
 
-        public Receiver(BlockingQueue<T> queue, Class<T> cls) {
+        public Receiver(Class<T> cls) {
             this.handler = new WeakReference<Consumer<T>>(null);
-            this.queue = queue;
             this.cls = cls;
-        }
-
-        public T recv() throws InterruptedException {
-            return queue.take();
-        }
-
-        public T recv(long timeoutMillis) throws InterruptedException {
-            return queue.poll(timeoutMillis, TimeUnit.MILLISECONDS);
-        }
-
-        public T recvNonBlocking() {
-            return queue.remove();
         }
 
         public void setHandler(Consumer<T> handler) {
             // An instance of Receiver should not prevent the object of which
             // `handler` is a method from being garbage collected, so it's put
             // behind a weak reference.
-
-            T message = queue.poll();
-            while (message != null) {
-                handler.accept(message);
-                message = queue.poll();
-            }
 
             this.handler = new WeakReference<Consumer<T>>(handler);
         }
@@ -215,7 +190,7 @@ final class MessagePasser {
                 handler.accept(message);
                 return true;
             } else {
-                return queue.offer(message);
+                return false;
             }
         }
     }

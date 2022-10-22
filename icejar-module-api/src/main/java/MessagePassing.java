@@ -119,30 +119,6 @@ public final class MessagePassing {
      */
     public static interface Receiver<T> {
         /**
-         * Receive a message from a Sender. This method waits indefinitely
-         * until a message is available.
-         *
-         * @throws InterruptedException if waiting for a message was interrupted.
-         */
-        T recv() throws InterruptedException;
-
-        /**
-         * Receive a message from a Sender. This message waits for the given
-         * number of milliseconds for a message and returns `null` if no
-         * message is available.
-         *
-         * @throws InterruptedException if waiting for a message was interrupted.
-         */
-        T recv(long timeoutMillis) throws InterruptedException;
-
-        /**
-         * Receive a message from a Sender. This message does not wait and
-         * immediately returns the first available message or `null` if no
-         * message is available.
-         */
-        T recvNonBlocking();
-
-        /**
          * Set a method which will handle incoming messages. If a handler is
          * set, it takes priority over enqueuing messages, i.e. messages will
          * be passed to the handler rather than enqueued to be received by one
