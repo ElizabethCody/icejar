@@ -111,32 +111,27 @@ final class MessagePasser {
         private String serverName;
         private String moduleName;
         private String channel;
+        private WeakReference<Receiver<?>> receiver;
 
         public Sender(String serverName, String moduleName, String channel) {
             this.serverName = serverName;
             this.moduleName = moduleName;
             this.channel = channel;
+            this.receiver = new WeakReference<>(null);
         }
 
         public boolean send(T message) {
-            // the handler method for a receiver gets priority over the
-            // receiver's BlockingQueue, so we first try calling the
-            // handle method for the receiver.
-            //
-            // If there is no receiver, then we will put the message into the
-            // appropriate queue. That way, if/when a receiver is created in
-            // the future, it will be able to receive our message from the 
-            // queue and it won't just be lost.
-
-            synchronized (MessagePasser.class) {
-                Receiver<?> receiver = MessagePasser.getReceiver(
+            Receiver<?> receiver = this.receiver.get();
+            if (receiver == null) {
+                receiver = MessagePasser.getReceiver(
                         serverName, moduleName, channel);
+            }
+            this.receiver = new WeakReference<>(receiver);
 
-                if (receiver != null) {
-                    return receiver.handle(message);
-                } else {
-                    return false;
-                }
+            if (receiver != null) {
+                return receiver.handle(message);
+            } else {
+                return false;
             }
         }
     }

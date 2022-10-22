@@ -147,10 +147,6 @@ public final class MessagePassing {
          * set, it takes priority over enqueuing messages, i.e. messages will
          * be passed to the handler rather than enqueued to be received by one
          * of the `recv` methods.
-         *
-         * Handler methods <i>must not</i> contain long-running tasks since
-         * messages are consumed one by one, i.e. the execution of a handler
-         * method blocks the processing of future methods.
          */
         void setHandler(Consumer<T> handler);
     }
