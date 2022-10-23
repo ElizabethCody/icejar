@@ -8,7 +8,6 @@ import java.util.function.Consumer;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.Optional;
-import java.lang.ref.WeakReference;
 import java.lang.reflect.RecordComponent;
 import java.lang.reflect.Constructor;
 
@@ -106,22 +105,16 @@ final class MessagePasser {
         private String serverName;
         private String moduleName;
         private String channel;
-        private WeakReference<Receiver<?>> receiver;
 
         public Sender(String serverName, String moduleName, String channel) {
             this.serverName = serverName;
             this.moduleName = moduleName;
             this.channel = channel;
-            this.receiver = new WeakReference<>(null);
         }
 
         public boolean send(T message) {
-            Receiver<?> receiver = this.receiver.get();
-            if (receiver == null) {
-                receiver = MessagePasser.getReceiver(
-                        serverName, moduleName, channel);
-            }
-            this.receiver = new WeakReference<>(receiver);
+            Receiver<?> receiver = MessagePasser.getReceiver(
+                    serverName, moduleName, channel);
 
             if (receiver != null) {
                 return receiver.handle(message);
