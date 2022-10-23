@@ -498,9 +498,9 @@ final class ClientManager {
                     }
                 }
             } catch (ClassNotFoundException e) {
-                logger.log(Level.WARNING, "No `Module` class in `" + changedModuleFile + "`:", e);
+                logger.log(Level.WARNING, "No `Module` class in `" + changedModuleFile + "`: " + e);
             } catch (IOException e) {
-                logger.log(Level.WARNING, "Reading JAR file `" + changedModuleFile + "` threw:", e);
+                logger.log(Level.WARNING, "Reading JAR file `" + changedModuleFile + "` threw: " + e);
                 moduleClasses.remove(changedModuleFile);
             }
         }

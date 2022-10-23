@@ -101,13 +101,13 @@ final class Client {
         return Collections.unmodifiableSet(enabledModules.keySet());
     }
 
-    private synchronized void startReconnectThread() {
+    private void startReconnectThread() {
         if (connectThread != null) {
             connectThread.interrupt();
             try {
                 connectThread.join();
             } catch (InterruptedException e) {
-                logger.log(Level.FINE, "Waiting for previous connection thread to exit threw:", e);
+                logger.log(Level.WARNING, "Waiting for previous connection thread to exit threw: " + e);
                 return;
             }
         }
@@ -116,7 +116,7 @@ final class Client {
             try {
                 this.reconnect();
             } catch (java.lang.Exception e) {
-                logger.log(Level.WARNING, "Connection thread threw:", e);
+                logger.log(Level.WARNING, "Connection thread threw: " + e);
             }
         });
 
@@ -137,7 +137,7 @@ final class Client {
             } catch (OperationInterruptedException e) {
                 break;
             } catch (java.lang.Exception e) {
-                logger.log(Level.FINE, "Connection attempt threw:" + e);
+                logger.log(Level.FINE, "Connection attempt threw: " + e);
 
                 if (reconnectDelay < MAX_RECONNECT_DELAY) {
                     Thread.sleep(reconnectDelay);
@@ -238,7 +238,7 @@ final class Client {
             Module module = enabledModules.get(moduleFile);
             if (module != null) {
                 try {
-                    synchronized(module) {
+                    synchronized (module) {
                         module.cleanup();
                     }
                 } catch (java.lang.Exception e) {
@@ -273,11 +273,14 @@ final class Client {
                         moduleConfig = new HashMap<String, java.lang.Object>();
                     }
 
-                    synchronized(module) {
+
+                    // System.out.println("Setting up " + moduleName);
+                    synchronized (module) {
                         module.setup(moduleConfig, meta, adapter, server);
                     }
+                    // System.out.println("SET UP " + moduleName);
                 } catch (java.lang.Exception e) {
-                    logger.log(Level.WARNING, "Call to `setup()` for `Module` from `" + moduleFile + "` threw:", e);
+                    logger.log(Level.WARNING, "Call to `setup()` for `Module` from `" + moduleFile + "` threw: " + e);
                 }
             }
         }

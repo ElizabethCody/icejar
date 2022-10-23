@@ -133,20 +133,15 @@ final class MessagePasser {
 
     static class Receiver<T> implements MessagePassing.Receiver<T> {
 
-        private WeakReference<Consumer<T>> handler;
+        private Consumer<T> handler;
         private Class<T> cls;
 
         public Receiver(Class<T> cls) {
-            this.handler = new WeakReference<Consumer<T>>(null);
             this.cls = cls;
         }
 
         public void setHandler(Consumer<T> handler) {
-            // An instance of Receiver should not prevent the object of which
-            // `handler` is a method from being garbage collected, so it's put
-            // behind a weak reference.
-
-            this.handler = new WeakReference<Consumer<T>>(handler);
+            this.handler = handler;
         }
 
         private T convertMessage(Object message) throws Exception {
@@ -183,8 +178,6 @@ final class MessagePasser {
             } catch (Exception e) {
                 return false;
             }
-
-            Consumer<T> handler = this.handler.get();
 
             if (handler != null) {
                 handler.accept(message);
