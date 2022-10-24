@@ -46,7 +46,7 @@ Icejar can connect to multiple Mumble servers. The details of a connection to a
 Mumble server are written in a TOML file in the `servers` sub-directory.
 
 For example: create a file called `my_server.toml` in the `servers`
-sub-directory with the following values:
+sub-directory with the following contents:
 
 ```toml
 ice_host = "127.0.0.1"
@@ -68,9 +68,48 @@ $ java -jar MumbleIce.jar
 If everything is working properly, you will see the following log output:
 ```
 [INFO] icejar: Starting Icejar.
-[INFO] icejar.client.my_server: Connecting...
 [INFO] icejar.client.my_server: Connected.
 ```
+
+## Using Modules
+
+Modules are the unit of distribution for additional functionality/features
+which are run by Icejar to extend a Mumble server. Icejar loads modules from a
+single directory, but a unique instance of each module is created for each
+server for which that module is enabled.
+
+Modules are distributed as JAR files. To install a module into Icejar, place
+the JAR file into the modules directory.
+
+Additionally, you must enable the module for your server. To do this, you
+add the module's name to the list module names stored in the `enabled_modules`
+field of the server's config file.
+
+For example: To enable a module distributed as `foo.jar` on a server configured
+in `my_server.toml`, `foo.jar` is placed in the modules directory and the
+following is added to `my_server.toml`:
+
+```toml
+enabled_modules = [ "foo" ]
+```
+
+Modules can themselves be configured. The configuration for each module is
+included in its own table in the server configuration file.
+
+For example: The `foo.jar` module could be configured in `my_server.toml` by
+adding the following:
+
+```toml
+[foo]
+value_a = 1
+value_b = 2
+value_c = "bar"
+```
+
+The actual configuration options available depends on the module. If the module
+supports configuration, it should be documented and distributed along with the
+module by the module's author.
+
 
 ## Useful Links
 
