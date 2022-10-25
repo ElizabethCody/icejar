@@ -467,6 +467,12 @@ final class ClientManager {
 
     private static void updateModuleClasses(Set<File> changedModuleFiles) {
         for (File changedModuleFile: changedModuleFiles) {
+            // Remove classes for files which no longer exist
+            if (!changedModuleFile.exists()) {
+                moduleClasses.remove(changedModuleFile);
+                continue;
+            }
+
             try (JarFile jar = new JarFile(changedModuleFile)) {
 
                 URL moduleFileURL = changedModuleFile.toURI().toURL();
@@ -494,14 +500,12 @@ final class ClientManager {
                                 moduleClasses.put(changedModuleFile, moduleClass);
                                 break;
                             }
-                        } catch (NoClassDefFoundError e) {}
+                        } catch (NoClassDefFoundError e) {
+                        } catch (ClassNotFoundException e) {}
                     }
                 }
-            } catch (ClassNotFoundException e) {
-                logger.log(Level.WARNING, "No `Module` class in `" + changedModuleFile + "`: " + e);
             } catch (IOException e) {
                 logger.log(Level.WARNING, "Reading JAR file `" + changedModuleFile + "` threw: " + e);
-                moduleClasses.remove(changedModuleFile);
             }
         }
     }
