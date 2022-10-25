@@ -51,7 +51,7 @@ final class Client {
         this.logger = logger;
     }
 
-    protected void reconfigure(
+    protected synchronized void reconfigure(
             String[] iceArgs, String iceHost, int icePort, String iceSecret,
             Map<File, Module> enabledModules, String serverName, Long serverID,
             Toml config) throws java.lang.Exception
@@ -101,7 +101,7 @@ final class Client {
         return Collections.unmodifiableSet(enabledModules.keySet());
     }
 
-    private void startReconnectThread() {
+    private synchronized void startReconnectThread() {
         if (connectThread != null) {
             connectThread.interrupt();
             try {
@@ -130,9 +130,11 @@ final class Client {
 
         while (!Thread.interrupted()) {
             try {
-                disconnect();
-                attemptConnection();
-                setup();
+                synchronized (this) {
+                    disconnect();
+                    attemptConnection();
+                    setup();
+                }
                 break;
             } catch (OperationInterruptedException e) {
                 break;
@@ -219,7 +221,7 @@ final class Client {
         }
     }
 
-    protected void reloadModules(Map<File, Module> changedModules) {
+    protected synchronized void reloadModules(Map<File, Module> changedModules) {
         for (Map.Entry<File, Module> changedModuleEntry: changedModules.entrySet()) {
             File changedModuleFile = changedModuleEntry.getKey();
             Module changedModule = changedModuleEntry.getValue();
@@ -250,7 +252,7 @@ final class Client {
         }
     }
 
-    private void setup() {
+    private synchronized void setup() {
         for (Map.Entry<File, Module> moduleEntry: enabledModules.entrySet()) {
             File moduleFile = moduleEntry.getKey();
             String moduleFileName = moduleFile.getName();
@@ -274,11 +276,9 @@ final class Client {
                     }
 
 
-                    // System.out.println("Setting up " + moduleName);
                     synchronized (module) {
                         module.setup(moduleConfig, meta, adapter, server);
                     }
-                    // System.out.println("SET UP " + moduleName);
                 } catch (java.lang.Exception e) {
                     logger.log(Level.WARNING, "Call to `setup()` for `Module` from `" + moduleFile + "` threw: " + e);
                 }
@@ -286,7 +286,7 @@ final class Client {
         }
     }
 
-    protected void cleanup() {
+    protected synchronized void cleanup() {
         logger.fine("Cleaning up.");
 
         for (File moduleFile: enabledModules.keySet()) {
