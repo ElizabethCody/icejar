@@ -4,6 +4,9 @@ import icejar.MessagePassing;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.Map;
 import java.util.HashMap;
@@ -128,13 +131,20 @@ final class MessagePasser {
 
         private Consumer<T> handler;
         private Class<T> cls;
+        private ReadWriteLock rwLock;
 
         public Receiver(Class<T> cls) {
             this.cls = cls;
+            rwLock = new ReentrantReadWriteLock();
         }
 
         public void setHandler(Consumer<T> handler) {
+            Lock lock = rwLock.writeLock();
+            lock.lock();
+
             this.handler = handler;
+
+            lock.unlock();
         }
 
         private T convertMessage(Object message) throws Exception {
@@ -172,10 +182,15 @@ final class MessagePasser {
                 return false;
             }
 
+            Lock lock = rwLock.readLock();
+            lock.lock();
+
             if (handler != null) {
                 handler.accept(message);
+                lock.unlock();
                 return true;
             } else {
+                lock.unlock();
                 return false;
             }
         }
