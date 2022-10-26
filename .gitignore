@@ -4,5 +4,8 @@
 # Ignore Gradle build output directory
 build
 
+# Ignore generated docs
+docs_output
+
 servers
 modules
