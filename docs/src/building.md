@@ -10,13 +10,8 @@ To build Icejar from source, you will need the following:
  rather than from ZeroC's site. You can check package availability
  [here](https://repology.org/project/zeroc-ice/packages).
 
-If you have the dependencies listed above, run the following to get Icejar's
-sources and build the project:
-
-```shell
-$ cd icejar
-$ gradle build
-```
+If you have the dependencies listed above, run `gradle build` in Icejar's
+root directory to build the project.
 
 Within the project's directory, the main program is located at
 `icejar-client/build/MumbleIce.jar`.
