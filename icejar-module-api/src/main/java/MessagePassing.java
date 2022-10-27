@@ -119,10 +119,7 @@ public final class MessagePassing {
      */
     public static interface Receiver<T> {
         /**
-         * Set a method which will handle incoming messages. If a handler is
-         * set, it takes priority over enqueuing messages, i.e. messages will
-         * be passed to the handler rather than enqueued to be received by one
-         * of the `recv` methods.
+         * Set a method which will handle incoming messages.
          */
         void setHandler(Consumer<T> handler);
     }
