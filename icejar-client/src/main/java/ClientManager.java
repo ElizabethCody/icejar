@@ -141,8 +141,7 @@ final class ClientManager {
                             ICE_ARGS_VAR + " = []\n"
                             + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
                             + ICE_PORT_VAR + " = 6502\n"
-                            + ENABLED_MODULES_VAR + " = []\n"
-                            + SERVER_ID_VAR + " = 1\n");
+                            + ENABLED_MODULES_VAR + " = []\n");
                     Toml overrides = new Toml().read(changedServerConfigFile);
                     Toml config = new Toml(defaults).read(overrides);
 
