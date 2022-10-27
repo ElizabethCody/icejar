@@ -2,7 +2,6 @@
 
 To build Icejar from source, you will need the following:
 
-* [Git](https://git-scm.org).
 * [Gradle](https://gradle.org).
 * *At least* version 17 of the JDK.
 * [ZeroC Ice development tools for Java](https://zeroc.com/downloads/ice/3.7/java).
