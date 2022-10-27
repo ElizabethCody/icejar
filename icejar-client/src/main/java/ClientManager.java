@@ -1,7 +1,8 @@
 package icejar;
 
 import java.io.File;
-import java.io.FilenameFilter;
+import java.nio.file.Files;
+import java.nio.file.FileVisitOption;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -216,6 +217,29 @@ final class ClientManager {
         }
     }
 
+    private static Toml readServerConfig(File serverConfigFile) throws Exception {
+        if (serverConfigFile.isDirectory()) {
+            Toml config = new Toml();
+
+            for (File subFile: serverConfigFile.listFiles()) {
+                Toml subConfig = readServerConfig(subFile);
+
+                if (subConfig != null) {
+                    config.read(subConfig);
+                }
+            }
+
+            return config;
+        } else if (
+                serverConfigFile.isFile()
+                && serverConfigFile.getName().endsWith(SERVER_CONFIG_EXTENSION))
+        {
+            return new Toml().read(serverConfigFile);
+        } else {
+            return null;
+        }
+    }
+
     private static void updateModules() {
         Set<File> moduleFiles = getModuleFiles();
 
@@ -267,7 +291,15 @@ final class ClientManager {
     private static String stripPrefixAndSuffix(
             String s, String prefix, String suffix)
     {
-        return s.substring(prefix.length(), s.length() - suffix.length());
+        if (s.startsWith(prefix)) {
+            s = s.substring(prefix.length());
+        }
+
+        if (s.endsWith(suffix)) {
+            s = s.substring(0, s.length() - suffix.length());
+        }
+
+        return s;
     }
 
     private static String serverConfigFileName(File serverConfigFile) {
@@ -373,8 +405,21 @@ final class ClientManager {
 
 
     private static Set<File> getServerConfigFiles() {
-        return getFilesWithExtensionFromDir(
-                serverConfigDir, SERVER_CONFIG_EXTENSION);
+        Set<File> serverConfigFiles = new HashSet<>();
+
+        File[] contents = serverConfigDir.listFiles();
+        if (contents != null) {
+            for (File serverConfigFile: contents) {
+                if (
+                        serverConfigFile.isDirectory()
+                        || serverConfigFile.getName().endsWith(SERVER_CONFIG_EXTENSION))
+                {
+                    serverConfigFiles.add(serverConfigFile);
+                }
+            }
+        }
+
+        return serverConfigFiles;
     }
 
     private static Set<File> getModuleFiles() {
@@ -384,16 +429,17 @@ final class ClientManager {
     // Returns the files in the given directory which have names ending in the
     // given extension.
     private static Set<File> getFilesWithExtensionFromDir(File dir, String ext) {
-        Set<File> files = new HashSet<File>();
+        Set<File> files = new HashSet<>();
 
-        FilenameFilter filter = (d, fileName) -> fileName.endsWith(ext);
-
-        File[] filteredFiles = dir.listFiles(filter);
-
-        if (filteredFiles != null) {
-            for (File file: filteredFiles) {
-                files.add(file);
-            }
+        try {
+            Files.walk(dir.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
+                String fileName = path.getFileName().toString();
+                if (fileName.endsWith(MODULE_EXTENSION)) {
+                    files.add(path.toFile());
+                }
+            });
+        } catch (IOException e) {
+            logger.warning("Walking directory contents of `" + dir + "` threw: " + e);
         }
 
         return files;
