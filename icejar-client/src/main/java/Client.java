@@ -240,9 +240,7 @@ final class Client {
             Module module = enabledModules.get(moduleFile);
             if (module != null) {
                 try {
-                    synchronized (module) {
-                        module.cleanup();
-                    }
+                    module.cleanup();
                 } catch (java.lang.Exception e) {
                     logger.log(Level.WARNING, "Call to `cleanup()` for `Module` from `" + moduleFile + "` threw:", e);
                 }
@@ -276,9 +274,7 @@ final class Client {
                     }
 
 
-                    synchronized (module) {
-                        module.setup(moduleConfig, meta, adapter, server);
-                    }
+                    module.setup(moduleConfig, meta, adapter, server);
                 } catch (java.lang.Exception e) {
                     logger.log(Level.WARNING, "Call to `setup()` for `Module` from `" + moduleFile + "` threw: " + e);
                 }
