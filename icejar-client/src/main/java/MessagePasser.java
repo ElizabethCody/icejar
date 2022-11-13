@@ -147,28 +147,52 @@ final class MessagePasser {
             lock.unlock();
         }
 
-        private T convertMessage(Object message) throws Exception {
+        @SuppressWarnings("unchecked")
+        private static <M> M convertMessage(Object message, Class<M> cls) throws Exception {
             Class<?> msgCls = message.getClass();
 
-            // Special handling for equivalent record classes, i.e. records
-            // which might be different classes, but whose members have the
-            // same types so we can convert easily.
-            if (msgCls.isRecord()) {
-                RecordComponent[] components = msgCls.getRecordComponents();
+            if (msgCls.isRecord() && cls.isRecord()) {
+                // Special handling for equivalent record classes, i.e. records
+                // which might be different classes, but whose members have the
+                // same types so we can convert easily.
+
+                RecordComponent[] msgComponents = msgCls.getRecordComponents();
+                RecordComponent[] components = cls.getRecordComponents();
                 Object[] args = new Object[components.length];
 
                 Class<?>[] paramTypes =
                     Arrays.stream(components)
                     .map(RecordComponent::getType)
                     .toArray(Class<?>[]::new);
-                Constructor<T> constructor = cls.getDeclaredConstructor(paramTypes);
+                Constructor<M> constructor = cls.getDeclaredConstructor(paramTypes);
 
                 for (int i = 0; i < args.length; i++) {
-                    args[i] = paramTypes[i].cast(
-                            components[i].getAccessor().invoke(message));
+                    args[i] = convertMessage(
+                            msgComponents[i].getAccessor().invoke(message),
+                            paramTypes[i]);
                 }
 
                 return constructor.newInstance(args);
+            } else if (msgCls.isArray() && cls.isArray()) {
+                // Special handling for arrays
+
+                Object[] msgArr = (Object[]) message;
+                Object[] arr = new Object[msgArr.length];
+                Class<?> componentType = msgCls.componentType();
+                Class<? extends Object[]> arrCls = (Class<? extends Object[]>) cls;
+
+                for (int i = 0; i < msgArr.length; i++) {
+                    arr[i] = convertMessage(msgArr[i], componentType);
+                }
+
+                return cls.cast(Arrays.copyOf(arr, arr.length, arrCls));
+            } else if (msgCls.isEnum() && cls.isEnum()) {
+                // Special handling for enums
+
+                Enum<?> msgEnum = (Enum) message;
+                Class<? extends Enum> enumCls = (Class<? extends Enum>) cls;
+
+                return cls.cast(Enum.valueOf(enumCls, msgEnum.name()));
             } else {
                 return cls.cast(message);
             }
@@ -177,7 +201,7 @@ final class MessagePasser {
         public boolean handle(Object messageO) {
             T message;
             try {
-                message = convertMessage(messageO);
+                message = convertMessage(messageO, cls);
             } catch (Exception e) {
                 return false;
             }
