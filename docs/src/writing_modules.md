@@ -230,8 +230,8 @@ Add the following method to the `Module` class:
 ```java
 @Override
 public void setupMessagePassing(Coordinator c) {
-    Receiver<TextMessage> receiver = c.getReceiver(TextMessage.class);
-    receiver.setHandler(this::echoTextMessage);
+    Receiver<TextMessage> receiver = c.getReceiver(
+        TextMessage.class, this::echoTextMessage);
     sender = c.getSender("demo_module");
 }
 ```
@@ -259,8 +259,10 @@ created with the name of the module to which its messages will be sent. In
 this example the name of the current module, `"demo_module"`, is used.
 
 The behaviour of a `Receiver` upon receiving a message is defined using its
-`setHandler` method. This method sets the method to call when a message is
-received. The given method must have no return value (`void`) and accept a
+handler method. The handler method can be set in the call to `getReceiver` as
+in this example, or it can be omitted and set later using the `setHandler`
+method of the receiver. The handler method is called whenever a message is
+received. The handler method must have no return value (`void`) and accept a
 single parameter: a value of the type expected by the `Receiver`. In this
 example, we can use `this::echoTextMessage` as the handler method since it
 meets the criteria.
