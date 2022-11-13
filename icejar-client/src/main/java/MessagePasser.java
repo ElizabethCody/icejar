@@ -36,9 +36,10 @@ final class MessagePasser {
     }
 
     protected static synchronized <T> Receiver<T> createReceiver(
-            String serverName, String moduleName, String channel, Class<T> cls)
+            String serverName, String moduleName, String channel,
+            Class<T> cls, Consumer<T> handler)
     {
-        Receiver<T> receiver = new Receiver<>(cls);
+        Receiver<T> receiver = new Receiver<>(cls, handler);
 
         createMappingFor(receivers, serverName, moduleName);
         receivers.get(serverName).get(moduleName).put(channel, receiver);
@@ -94,12 +95,22 @@ final class MessagePasser {
             return getSender(moduleName, "");
         }
 
+        public <T> Receiver<T> getReceiver(
+                String channel, Class<T> cls, Consumer<T> handler)
+        {
+            return MessagePasser.createReceiver(serverName, moduleName, channel, cls, handler);
+        }
+
+        public <T> Receiver<T> getReceiver(Class<T> cls, Consumer<T> handler) {
+            return getReceiver("", cls, handler);
+        }
+
         public <T> Receiver<T> getReceiver(String channel, Class<T> cls) {
-            return MessagePasser.createReceiver(serverName, moduleName, channel, cls);
+            return MessagePasser.createReceiver(serverName, moduleName, channel, cls, null);
         }
 
         public <T> Receiver<T> getReceiver(Class<T> cls) {
-            return getReceiver("", cls);
+            return getReceiver("", cls, null);
         }
     }
 
@@ -133,8 +144,9 @@ final class MessagePasser {
         private Class<T> cls;
         private ReadWriteLock rwLock;
 
-        public Receiver(Class<T> cls) {
+        public Receiver(Class<T> cls, Consumer<T> handler) {
             this.cls = cls;
+            this.handle = handler;
             rwLock = new ReentrantReadWriteLock();
         }
 
