@@ -146,7 +146,7 @@ final class MessagePasser {
 
         public Receiver(Class<T> cls, Consumer<T> handler) {
             this.cls = cls;
-            this.handle = handler;
+            this.handler = handler;
             rwLock = new ReentrantReadWriteLock();
         }
 
