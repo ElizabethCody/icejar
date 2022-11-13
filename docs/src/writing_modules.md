@@ -457,10 +457,9 @@ public class Module implements icejar.Module {
 
     @Override
     public void setupMessagePassing(Coordinator c) {
-        Receiver<TextMessage> receiver = c.getReceiver(TextMessage.class);
+        Receiver<TextMessage> receiver = c.getReceiver(
+            TextMessage.class, this::echoTextMessage);
         sender = c.getSender("demo_module");
-
-        receiver.setHandler(this::echoTextMessage);
     }
 
     public void echoTextMessage(TextMessage message) {
