@@ -161,6 +161,11 @@ final class MessagePasser {
 
         @SuppressWarnings("unchecked")
         private static <M> M convertMessage(Object message, Class<M> cls) throws Exception {
+            if (message == null) {
+                // return early if null, since no further conversion is required.
+                return null;
+            }
+
             Class<?> msgCls = message.getClass();
 
             if (msgCls.isRecord() && cls.isRecord()) {
