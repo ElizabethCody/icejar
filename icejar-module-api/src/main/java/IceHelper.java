@@ -1,5 +1,9 @@
 package icejar;
 
+import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+
 import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
 
@@ -8,7 +12,16 @@ public final class IceHelper {
     private IceHelper() {}
 
     /**
-     * Helper function to add a callback to a Mumble server.
+     * Helper method to register a server callback with Ice.
+     */
+    public static ServerCallbackPrx getServerCallback(
+            ObjectAdapter adapter, ServerCallback callback)
+    {
+        return ServerCallbackPrx.uncheckedCast(adapter.addWithUUID(callback));
+    }
+
+    /**
+     * Helper method to add a callback to a Mumble server.
      * 
      * @param server Interface to the specific virtual server to which the
      * callback will be added.
@@ -22,15 +35,24 @@ public final class IceHelper {
             ServerPrx server, ObjectAdapter adapter,
             ServerCallback callback) throws Exception
     {
-        ServerCallbackPrx cb = ServerCallbackPrx.uncheckedCast(
-                adapter.addWithUUID(callback));
+        ServerCallbackPrx cb = getServerCallback(adapter, callback);
 
         server.addCallback(cb);
         return cb;
     }
 
     /**
-     * Helper function to add a context action callback to a Mumble server.
+     * Helper method to register a context action callback with Ice.
+     */
+    public static ServerContextCallbackPrx getServerContextCallback(
+            ObjectAdapter adapter, ServerContextCallback callback)
+    {
+        return ServerContextCallbackPrx.uncheckedCast(
+                adapter.addWithUUID(callback));
+    }
+
+    /**
+     * Helper method to add a context action callback to a Mumble server.
      * 
      * @param server Interface to the specific virtual server to which the
      * callback will be added.
@@ -50,15 +72,24 @@ public final class IceHelper {
             int session, String action, String text,
             ServerContextCallback callback, int ctx) throws Exception
     {
-        ServerContextCallbackPrx cb = ServerContextCallbackPrx.uncheckedCast(
-                adapter.addWithUUID(callback));
+        ServerContextCallbackPrx cb = getServerContextCallback(adapter, callback);
 
         server.addContextCallback(session, action, text, cb, ctx);
         return cb;
     }
 
+    /**
+     * Helper method to register an authenticator with Ice.
+     */
+    public static ServerAuthenticatorPrx getServerAuthenticator(
+            ObjectAdapter adapter, ServerAuthenticator authenticator)
+    {
+        return ServerAuthenticatorPrx.uncheckedCast(
+                adapter.addWithUUID(authenticator));
+    }
+
     /** 
-     * Helper function to add an authenticator to a Mumble server.
+     * Helper method to add an authenticator to a Mumble server.
      *
      * @param server Interface to the specific virtual server for which the
      * authenticator will be set.
@@ -72,11 +103,20 @@ public final class IceHelper {
             ServerPrx server, ObjectAdapter adapter,
             ServerAuthenticator authenticator) throws Exception
     {
-        ServerAuthenticatorPrx auth = ServerAuthenticatorPrx.uncheckedCast(
-                adapter.addWithUUID(authenticator));
+        ServerAuthenticatorPrx auth = getServerAuthenticator(adapter, authenticator);
 
         server.setAuthenticator(auth);
         return auth;
+    }
+
+    /**
+     * Helper method to register a meta callback with Ice.
+     */
+    public static MetaCallbackPrx getMetaCallback(
+            ObjectAdapter adapter, MetaCallback callback)
+    {
+        return MetaCallbackPrx.uncheckedCast(
+                adapter.addWithUUID(callback));
     }
 
     /**
@@ -94,15 +134,14 @@ public final class IceHelper {
             MetaPrx meta, ObjectAdapter adapter,
             MetaCallback callback) throws Exception
     {
-        MetaCallbackPrx cb = MetaCallbackPrx.uncheckedCast(
-                adapter.addWithUUID(callback));
+        MetaCallbackPrx cb = getMetaCallback(adapter, callback);
 
         meta.addCallback(cb);
         return cb;
     }
 
     /**
-     * Helper function to send a new message to the same destination as an
+     * Helper method to send a new message to the same destination as an
      * existing message.
      * <p>
      * This is useful in the implementation of features which respond to text
@@ -126,5 +165,74 @@ public final class IceHelper {
         for (int tree: message.trees) {
             server.sendMessageChannel(tree, true, messageString);
         }
+    }
+
+    /**
+     * Return the registration IDs of users in the group with the given name
+     * in the given channel.
+     *
+     * @param server The interface to the Mumble server
+     * @param channel The ID of the channel against which to check group
+     * membership
+     * @param groupName The name of group whose members will be returned
+     *
+     * @return The set of registrations IDs of the members of the given group
+     * in the given channel.
+     */
+    public static Set<Integer> getGroupMembers(
+            ServerPrx server, int channel, String groupName) throws Exception
+    {
+        Set<Integer> groupUserIDs = new HashSet<>();
+        for (Group group: server.getACL(channel).groups) {
+            if (group.name.equals(groupName)) {
+                for (int id: group.members) {
+                    groupUserIDs.add(id);
+                }
+
+                break;
+            }
+        }
+
+        return groupUserIDs;
+    }
+
+    /**
+     * Return the currently connected users in the given channel.
+     *
+     * @param server The interface to the Mumble server
+     * @param channel The ID of the channel whose members will be returned
+     *
+     * @return A mapping from session IDs to user state objects for the users
+     * in the given channel on the given server.
+     */
+    public static Map<Integer, User> getUsersInChannel(
+            ServerPrx server, int channel) throws Exception
+    {
+        Map<Integer, User> allUsers = server.getUsers();
+        allUsers.entrySet().removeIf(e -> e.getValue().channel != channel);
+        return allUsers;
+    }
+
+    /**
+     * Return the currently connected users in the given channel who are also
+     * in the group with the given name in that channel.
+     *
+     * @param server The interface to the Mumble server
+     * @param channel The ID of the channel whose members will be returned
+     * @param groupName The name of the group whose members will be returned
+     *
+     * @return A mapping from session IDs to user state objects for the users
+     * who are both in the given channel and the given group on the given
+     * server.
+     */
+    public static Map<Integer, User> getUsersInGroup(
+            ServerPrx server, int channel, String groupName) throws Exception
+    {
+        Set<Integer> groupUserIDs = getGroupMembers(server, channel, groupName);
+
+        Map<Integer, User> usersInChannel = getUsersInChannel(server, channel);
+        usersInChannel.entrySet().removeIf(e -> !groupUserIDs.contains(e.getValue().userid));
+
+        return usersInChannel;
     }
 }
