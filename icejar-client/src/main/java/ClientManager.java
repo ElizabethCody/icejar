@@ -121,6 +121,7 @@ final class ClientManager {
     }
 
     private static void updateClientsAndModules() {
+        System.gc();
         // Update modules (if they changed)
         updateModules();
         // Update clients (if they changed)
@@ -142,7 +143,7 @@ final class ClientManager {
                             + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
                             + ICE_PORT_VAR + " = 6502\n"
                             + ENABLED_MODULES_VAR + " = []\n");
-                    Toml overrides = new Toml().read(changedServerConfigFile);
+                    Toml overrides = readServerConfig(changedServerConfigFile);
                     Toml config = new Toml(defaults).read(overrides);
 
                     Boolean enabled = config.getBoolean(ENABLED_VAR);
