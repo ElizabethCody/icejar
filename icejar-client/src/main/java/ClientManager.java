@@ -6,6 +6,10 @@ import java.nio.file.FileVisitOption;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.FileInputStream;
+import java.io.SequenceInputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
@@ -138,28 +142,52 @@ final class ClientManager {
         for (File changedServerConfigFile: changedServerConfigFiles) {
             if (changedServerConfigFile.exists()) {
                 try {
-                    Toml defaults = new Toml().read(
-                            ICE_ARGS_VAR + " = []\n"
+                    // Read configuration
+                    Toml config = new Toml().read(
+                            "[server]\n"
+                            + ICE_ARGS_VAR + " = []\n"
                             + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
                             + ICE_PORT_VAR + " = 6502\n"
                             + ENABLED_MODULES_VAR + " = []\n");
-                    Toml overrides = readServerConfig(changedServerConfigFile);
-                    Toml config = new Toml(defaults).read(overrides);
 
-                    Boolean enabled = config.getBoolean(ENABLED_VAR);
+                    try (InputStream overrides = readServerConfig(changedServerConfigFile)) {
+                        config = new Toml(config).read(overrides);
+                    }
+
+                    Toml serverConfig = config.getTable("server");
+
+                    Boolean enabled = serverConfig.getBoolean(ENABLED_VAR);
                     // if `enabled` is defined AND false
                     if (enabled != null && !enabled) {
                         removeClient(changedServerConfigFile);
                         continue;
                     }
 
-                    String[] iceArgs = config.getList(ICE_ARGS_VAR).toArray(new String[0]);
-                    String iceHost = config.getString(ICE_HOST_VAR);
-                    int icePort = config.getLong(ICE_PORT_VAR).intValue();
+                    String[] iceArgs = serverConfig.getList(ICE_ARGS_VAR).toArray(new String[0]);
+                    String iceHost = serverConfig.getString(ICE_HOST_VAR);
+                    int icePort = serverConfig.getLong(ICE_PORT_VAR).intValue();
 
-                    String iceSecret = config.getString(ICE_SECRET_VAR);
+                    String iceSecret = serverConfig.getString(ICE_SECRET_VAR);
 
-                    List<String> enabledModuleNames = config.getList(
+                    String serverName = serverConfig.getString(SERVER_NAME_VAR);
+                    Long serverID = serverConfig.getLong(SERVER_ID_VAR);
+
+                    // Get Client
+                    Client client;
+
+                    if (clientMap.containsKey(changedServerConfigFile)) {
+                        client = clientMap.get(changedServerConfigFile);
+                    } else {
+                        Logger clientLogger = Logger.getLogger(
+                                "icejar.client."
+                                + serverConfigFileName(changedServerConfigFile));
+                        logManager.addLogger(clientLogger);
+
+                        client = new Client(changedServerConfigFile, clientLogger);
+                        clientMap.put(changedServerConfigFile, client);
+                    }
+
+                    List<String> enabledModuleNames = serverConfig.getList(
                             ENABLED_MODULES_VAR, new ArrayList<String>());
 
                     Map<File, Class> enabledModuleClasses = new HashMap<File, Class>();
@@ -178,23 +206,6 @@ final class ClientManager {
                     Map<File, Module> enabledModules = moduleMapFromClassMap(
                             enabledModuleClasses, changedServerConfigFile);
 
-                    String serverName = config.getString(SERVER_NAME_VAR);
-                    Long serverID = config.getLong(SERVER_ID_VAR);
-
-                    Client client;
-
-                    if (clientMap.containsKey(changedServerConfigFile)) {
-                        client = clientMap.get(changedServerConfigFile);
-                    } else {
-                        Logger clientLogger = Logger.getLogger(
-                                "icejar.client."
-                                + serverConfigFileName(changedServerConfigFile));
-                        logManager.addLogger(clientLogger);
-
-                        client = new Client(changedServerConfigFile, clientLogger);
-                        clientMap.put(changedServerConfigFile, client);
-                    }
-
                     // Clean up message passing queues & receivers for modules
                     // which are no longer enabled.
                     for (File previouslyEnabledModule: client.getEnabledModules()) {
@@ -203,6 +214,7 @@ final class ClientManager {
                             MessagePasser.removeModule(serverName, moduleName);
                         }
                     }
+
 
                     client.reconfigure(
                             iceArgs, iceHost, icePort, iceSecret,
@@ -217,24 +229,24 @@ final class ClientManager {
         }
     }
 
-    private static Toml readServerConfig(File serverConfigFile) throws Exception {
+    private static InputStream readServerConfig(File serverConfigFile) throws Exception {
         if (serverConfigFile.isDirectory()) {
-            Toml config = new Toml();
+            ArrayList<InputStream> streams = new ArrayList<>();
 
             for (File subFile: serverConfigFile.listFiles()) {
-                Toml subConfig = readServerConfig(subFile);
+                InputStream s = readServerConfig(subFile);
 
-                if (subConfig != null) {
-                    config = config.read(subConfig);
+                if (s != null) {
+                    streams.add(s);
                 }
             }
 
-            return config;
+            return new SequenceInputStream(Collections.enumeration(streams));
         } else if (
                 serverConfigFile.isFile()
                 && serverConfigFile.getName().endsWith(SERVER_CONFIG_EXTENSION))
         {
-            return new Toml().read(serverConfigFile);
+            return new FileInputStream(serverConfigFile);
         } else {
             return null;
         }

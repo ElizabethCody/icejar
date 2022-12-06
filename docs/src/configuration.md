@@ -13,7 +13,7 @@ others. The order in which config files take precedence over each other is
 _not_ documented and is subject to change, so defining the same setting in
 multiple files should be avoided.
 
-The following keys are used:
+The following keys are used and should be placed in a table called `[server]`:
 
 * `server_id`: Attempt to connect to a virtual server with this ID.
 

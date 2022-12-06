@@ -16,7 +16,7 @@ There are 3 accepted command line arguments.
 Server configuration files use the [TOML](https://toml.io) format. Their file
 names must end in `.toml`. Parsing is done with [toml4j](https://github.com/mwanji/toml4j).
 
-The following keys are used:
+The following keys are used and should be placed in a table called `[server]`:
 
 * `server_id`: Attempt to connect to a virtual server with this ID.
 
@@ -70,6 +70,7 @@ module whenever a connection is established.
 ## Example configuration:
 ```toml
 # Configuration for connection
+[server]
 server_id = 1
 
 ice_args = []
