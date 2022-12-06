@@ -225,7 +225,7 @@ final class ClientManager {
                 Toml subConfig = readServerConfig(subFile);
 
                 if (subConfig != null) {
-                    config.read(subConfig);
+                    config = config.read(subConfig);
                 }
             }
 
