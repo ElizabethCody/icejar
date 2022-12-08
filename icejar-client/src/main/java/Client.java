@@ -101,6 +101,10 @@ final class Client {
         return Collections.unmodifiableSet(enabledModules.keySet());
     }
 
+    public Module getEnabledModule(File moduleFile) {
+        return enabledModules.get(moduleFile);
+    }
+
     private synchronized void startReconnectThread() {
         if (connectThread != null) {
             connectThread.interrupt();

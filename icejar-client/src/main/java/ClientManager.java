@@ -25,6 +25,7 @@ import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.Level;
 import java.util.Properties;
+import java.util.Optional;
 import java.net.URLClassLoader;
 import java.net.URL;
 import java.nio.file.WatchService;
@@ -47,6 +48,7 @@ final class ClientManager {
     private static final String CLASS_EXTENSION = ".class";
 
     // server config field names
+    private static final String SERVER_TABLE_NAME = "server";
     private static final String ICE_ARGS_VAR = "ice_args";
     private static final String ICE_HOST_VAR = "ice_host";
     private static final String ICE_PORT_VAR = "ice_port";
@@ -59,6 +61,11 @@ final class ClientManager {
     // Directories from which ClientManager reads files
     private static File serverConfigDir = new File("servers");
     private static File moduleDir = new File("modules");
+
+    // Logger names
+    private static final String BASE_LOGGER = "icejar";
+    private static final String CLIENT_LOGGER = "client";
+    private static final String MODULE_LOGGER = "module";
 
     private static Set<File> serverConfigFiles = new HashSet<File>();
     private static Set<File> moduleFiles = new HashSet<File>();
@@ -76,7 +83,6 @@ final class ClientManager {
 
     public static void main(String[] args) throws Exception {
         setupLogging();
-        logger.info("Starting Icejar.");
 
         parseArgs(args);
         Runtime.getRuntime().addShutdownHook(new Thread(ClientManager::cleanup));
@@ -119,7 +125,7 @@ final class ClientManager {
 
     private static void setupLogging() {
         logManager = LogManager.getLogManager();
-        logger = Logger.getLogger("icejar");
+        logger = Logger.getLogger(BASE_LOGGER);
         logManager.addLogger(logger);
         setLogFormatter();
     }
@@ -143,18 +149,13 @@ final class ClientManager {
             if (changedServerConfigFile.exists()) {
                 try {
                     // Read configuration
-                    Toml config = new Toml().read(
-                            "[server]\n"
-                            + ICE_ARGS_VAR + " = []\n"
-                            + ICE_HOST_VAR + " = \"127.0.0.1\"\n"
-                            + ICE_PORT_VAR + " = 6502\n"
-                            + ENABLED_MODULES_VAR + " = []\n");
+                    Toml config = new Toml();
 
                     try (InputStream overrides = readServerConfig(changedServerConfigFile)) {
-                        config = new Toml(config).read(overrides);
+                        config.read(overrides);
                     }
 
-                    Toml serverConfig = config.getTable("server");
+                    Toml serverConfig = config.getTable(SERVER_TABLE_NAME);
 
                     Boolean enabled = serverConfig.getBoolean(ENABLED_VAR);
                     // if `enabled` is defined AND false
@@ -163,9 +164,23 @@ final class ClientManager {
                         continue;
                     }
 
-                    String[] iceArgs = serverConfig.getList(ICE_ARGS_VAR).toArray(new String[0]);
-                    String iceHost = serverConfig.getString(ICE_HOST_VAR);
-                    int icePort = serverConfig.getLong(ICE_PORT_VAR).intValue();
+                    String[] iceArgs = Optional.ofNullable(
+                            serverConfig.getList(ICE_ARGS_VAR))
+                        .orElse(new ArrayList<>())
+                        .toArray(new String[0]);
+
+                    String iceHost = Optional.ofNullable(
+                            serverConfig.getString(ICE_HOST_VAR))
+                        .orElse("127.0.0.1");
+
+                    int icePort = Optional.ofNullable(
+                            serverConfig.getLong(ICE_PORT_VAR))
+                        .orElse(6502L)
+                        .intValue();
+
+                    List<String> enabledModuleNames = Optional.ofNullable(
+                            serverConfig.getList(ENABLED_MODULES_VAR, new ArrayList<String>()))
+                        .orElse(new ArrayList<>());
 
                     String iceSecret = serverConfig.getString(ICE_SECRET_VAR);
 
@@ -179,16 +194,15 @@ final class ClientManager {
                         client = clientMap.get(changedServerConfigFile);
                     } else {
                         Logger clientLogger = Logger.getLogger(
-                                "icejar.client."
-                                + serverConfigFileName(changedServerConfigFile));
+                                String.join(".",
+                                    BASE_LOGGER,
+                                    CLIENT_LOGGER,
+                                    serverConfigFileName(changedServerConfigFile)));
                         logManager.addLogger(clientLogger);
 
                         client = new Client(changedServerConfigFile, clientLogger);
                         clientMap.put(changedServerConfigFile, client);
                     }
-
-                    List<String> enabledModuleNames = serverConfig.getList(
-                            ENABLED_MODULES_VAR, new ArrayList<String>());
 
                     Map<File, Class> enabledModuleClasses = new HashMap<File, Class>();
                     for (String moduleName: enabledModuleNames) {
@@ -204,7 +218,7 @@ final class ClientManager {
                         }
                     }
                     Map<File, Module> enabledModules = moduleMapFromClassMap(
-                            enabledModuleClasses, changedServerConfigFile);
+                            enabledModuleClasses, changedServerConfigFile, client);
 
                     // Clean up message passing queues & receivers for modules
                     // which are no longer enabled.
@@ -220,6 +234,7 @@ final class ClientManager {
                             iceArgs, iceHost, icePort, iceSecret,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
+                    e.printStackTrace();
                     logger.log(Level.WARNING, "Parsing `" + changedServerConfigFile + "` threw: " + e.getMessage());
                 }
             } else {
@@ -348,7 +363,12 @@ final class ClientManager {
         String moduleName = moduleFileName(moduleFile);
 
         Logger moduleLogger = Logger.getLogger(
-                "icejar.client." + serverName + ".module." + moduleName);
+                String.join(".",
+                    BASE_LOGGER,
+                    CLIENT_LOGGER,
+                    serverName,
+                    MODULE_LOGGER,
+                    moduleName));
         logManager.addLogger(moduleLogger);
         module.setLogger(moduleLogger);
 
@@ -361,7 +381,7 @@ final class ClientManager {
     }
 
     private static Map<File, Module> moduleMapFromClassMap(
-            Map<File, Class> classMap, File serverConfigFile)
+            Map<File, Class> classMap, File serverConfigFile, Client client)
     {
         Map<File, Module> moduleMap = new HashMap<File, Module>();
 
@@ -369,9 +389,14 @@ final class ClientManager {
             File moduleFile = classEntry.getKey();
             Class<?> moduleClass = classEntry.getValue();
 
-            moduleMap.put(
-                    moduleFile,
-                    instanceModuleClass(moduleClass, moduleFile, serverConfigFile));
+            // Re-use module instance, if possible
+            Module module = client.getEnabledModule(moduleFile);
+            if (module == null) {
+                module = instanceModuleClass(
+                        moduleClass, moduleFile, serverConfigFile);
+            }
+
+            moduleMap.put(moduleFile, module);
         }
 
         return moduleMap;
