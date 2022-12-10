@@ -151,7 +151,7 @@ final class Client {
     }
 
     private void attemptConnection() throws java.lang.Exception {
-        String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
+        String proxyString = String.format("Meta:default -h %s -p %d ", iceHost, icePort);
         proxyString = proxyString + String.join(" ", iceArgs);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
