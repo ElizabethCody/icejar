@@ -56,7 +56,8 @@ final class ClassConverter {
         } else if (objCls.isEnum() && cls.isEnum()) {
             // Special handling for enums
 
-            Enum<?> objEnum = (Enum) obj;
+            Enum<?> objEnum = (Enum<?>) obj;
+            @SuppressWarnings("rawtypes")
             Class<? extends Enum> enumCls = (Class<? extends Enum>) cls;
 
             return cls.cast(Enum.valueOf(enumCls, objEnum.name()));
