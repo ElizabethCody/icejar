@@ -20,23 +20,20 @@ final class Client {
     private static final String ICE_CONTEXT_SECRET_VAR = "secret";
     private static final String SERVER_NAME_VAR = "registerName";
 
-    private Logger logger;
-
-    private File configFile;
+    private final Logger logger;
 
     private static final int MIN_RECONNECT_DELAY = 1000;
     private static final int MAX_RECONNECT_DELAY = 60000;
-    private int reconnectDelay = MIN_RECONNECT_DELAY;
 
+    private String[] iceArgs;
     private String iceHost;
     private int icePort;
-    private String[] iceArgs;
 
     private String serverName;
     private Long serverID;
     private Toml config;
 
-    private Map<File, Module> enabledModules = new HashMap<File, Module>();
+    private Map<File, Module> enabledModules = new HashMap<>();
 
     private Communicator communicator;
     private ObjectAdapter adapter;
@@ -46,19 +43,17 @@ final class Client {
     private Thread connectThread;
 
 
-    protected Client(File configFile, Logger logger) {
-        this.configFile = configFile;
+    Client(Logger logger) {
         this.logger = logger;
     }
 
-    protected synchronized void reconfigure(
+    synchronized void reconfigure(
             String[] iceArgs, String iceHost, int icePort, String iceSecret,
             Map<File, Module> enabledModules, String serverName, Long serverID,
-            Toml config) throws java.lang.Exception
-    {
+            Toml config) {
+        this.iceArgs = iceArgs;
         this.iceHost = iceHost;
         this.icePort = icePort;
-        this.iceArgs = iceArgs;
 
         this.serverName = serverName;
         this.serverID = serverID;
@@ -93,11 +88,11 @@ final class Client {
         startReconnectThread();
     }
 
-    protected boolean hasModuleFile(File moduleFile) {
+    boolean hasModuleFile(File moduleFile) {
         return enabledModules.containsKey(moduleFile);
     }
 
-    protected Set<File> getEnabledModules() {
+    Set<File> getEnabledModules() {
         return Collections.unmodifiableSet(enabledModules.keySet());
     }
 
@@ -130,7 +125,7 @@ final class Client {
     private void reconnect() throws java.lang.Exception {
         logger.fine("Re-connecting...");
 
-        reconnectDelay = MIN_RECONNECT_DELAY;
+        int reconnectDelay = MIN_RECONNECT_DELAY;
 
         while (!Thread.interrupted()) {
             try {
@@ -157,6 +152,7 @@ final class Client {
 
     private void attemptConnection() throws java.lang.Exception {
         String proxyString = String.format("Meta:default -h %s -p %d", iceHost, icePort);
+        proxyString = proxyString + String.join(" ", iceArgs);
         meta = MetaPrx.checkedCast(communicator.stringToProxy(proxyString));
 
         // NOTE: Mumble re-named its Ice module from "Murmur" to "MumbleServer"
@@ -177,7 +173,7 @@ final class Client {
         // Try to reconnect if the remote mumble server drops the connection.
         setAutoReconnectEnabled(true);
 
-        getServerPrx();
+        obtainServerPrx();
 
         logger.info("Connected.");
     }
@@ -198,7 +194,7 @@ final class Client {
         }
     }
 
-    private void getServerPrx() throws java.lang.Exception {
+    private void obtainServerPrx() throws java.lang.Exception {
         if (serverID != null) {
             ServerPrx server = meta.getServer(serverID.intValue());
             if (server == null) {
@@ -225,7 +221,7 @@ final class Client {
         }
     }
 
-    protected synchronized void reloadModules(Map<File, Module> changedModules) {
+    synchronized void reloadModules(Map<File, Module> changedModules) {
         for (Map.Entry<File, Module> changedModuleEntry: changedModules.entrySet()) {
             File changedModuleFile = changedModuleEntry.getKey();
             Module changedModule = changedModuleEntry.getValue();
@@ -274,7 +270,7 @@ final class Client {
                     if (moduleTable != null) {
                         moduleConfig = moduleTable.toMap();
                     } else {
-                        moduleConfig = new HashMap<String, java.lang.Object>();
+                        moduleConfig = new HashMap<>();
                     }
 
 
@@ -286,7 +282,7 @@ final class Client {
         }
     }
 
-    protected synchronized void cleanup() {
+    synchronized void cleanup() {
         logger.fine("Cleaning up.");
 
         for (File moduleFile: enabledModules.keySet()) {

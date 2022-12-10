@@ -9,30 +9,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.FileInputStream;
 import java.io.SequenceInputStream;
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Set;
-import java.util.HashSet;
-import java.util.Arrays;
-import java.util.Enumeration;
+import java.util.*;
+import java.util.stream.Stream;
 import java.util.jar.JarFile;
 import java.util.jar.JarEntry;
 import java.util.logging.Handler;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 import java.util.logging.Level;
-import java.util.Properties;
-import java.util.Optional;
 import java.net.URLClassLoader;
 import java.net.URL;
 import java.nio.file.WatchService;
 import java.nio.file.WatchKey;
+import java.nio.file.Path;
 import static java.nio.file.StandardWatchEventKinds.*;
 import java.nio.file.FileSystems;
-import java.nio.file.Path;
 
 import com.moandjiezana.toml.Toml;
 
@@ -67,13 +58,13 @@ final class ClientManager {
     private static final String CLIENT_LOGGER = "client";
     private static final String MODULE_LOGGER = "module";
 
-    private static Set<File> serverConfigFiles = new HashSet<File>();
-    private static Set<File> moduleFiles = new HashSet<File>();
-    private static Map<File, Class> moduleClasses = new HashMap<File, Class>();
-    private static Map<File, Long> lastModifiedTimes = new HashMap<File, Long>();
+    private static Set<File> serverConfigFiles = new HashSet<>();
+    private static Set<File> moduleFiles = new HashSet<>();
+    private static final Map<File, Class<?>> moduleClasses = new HashMap<>();
+    private static final Map<File, Long> lastModifiedTimes = new HashMap<>();
 
     // Map config files to Client objects
-    private static Map<File, Client> clientMap = new HashMap<File, Client>();
+    private static final Map<File, Client> clientMap = new HashMap<>();
 
     private static LogManager logManager;
     private static Logger logger;
@@ -164,6 +155,7 @@ final class ClientManager {
                         continue;
                     }
 
+                    @SuppressWarnings("SuspiciousToArrayCall")
                     String[] iceArgs = Optional.ofNullable(
                             serverConfig.getList(ICE_ARGS_VAR))
                         .orElse(new ArrayList<>())
@@ -200,15 +192,15 @@ final class ClientManager {
                                     serverConfigFileName(changedServerConfigFile)));
                         logManager.addLogger(clientLogger);
 
-                        client = new Client(changedServerConfigFile, clientLogger);
+                        client = new Client(clientLogger);
                         clientMap.put(changedServerConfigFile, client);
                     }
 
-                    Map<File, Class> enabledModuleClasses = new HashMap<File, Class>();
+                    Map<File, Class<?>> enabledModuleClasses = new HashMap<>();
                     for (String moduleName: enabledModuleNames) {
                         File enabledModuleFile = moduleFileFromName(moduleName);
                         if (moduleClasses.containsKey(enabledModuleFile)) {
-                            Class moduleClass = moduleClasses.get(enabledModuleFile);
+                            Class<?> moduleClass = moduleClasses.get(enabledModuleFile);
                             enabledModuleClasses.put(enabledModuleFile, moduleClass);
                         } else {
                             // If the class is unavailable, still insert null
@@ -248,7 +240,7 @@ final class ClientManager {
         if (serverConfigFile.isDirectory()) {
             ArrayList<InputStream> streams = new ArrayList<>();
 
-            for (File subFile: serverConfigFile.listFiles()) {
+            for (File subFile: Objects.requireNonNull(serverConfigFile.listFiles())) {
                 InputStream s = readServerConfig(subFile);
 
                 if (s != null) {
@@ -284,7 +276,7 @@ final class ClientManager {
 
             String serverName = serverConfigFileName(serverConfigFile);
 
-            Map<File, Module> modulesToReload = new HashMap<File, Module>();
+            Map<File, Module> modulesToReload = new HashMap<>();
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
                     // Clean up message passing queues & receivers from
@@ -292,7 +284,7 @@ final class ClientManager {
                     String moduleName = moduleFileName(changedModuleFile);
                     MessagePasser.removeModule(serverName, moduleName);
 
-                    Class moduleClass = moduleClasses.get(changedModuleFile);
+                    Class<?> moduleClass = moduleClasses.get(changedModuleFile);
                     Module module = instanceModuleClass(
                             moduleClass, changedModuleFile, serverConfigFile);
                     modulesToReload.put(changedModuleFile, module);
@@ -350,12 +342,12 @@ final class ClientManager {
             return null;
         }
 
-        Module module = null;
+        Module module;
         try {
             Object moduleObj = moduleClass.getDeclaredConstructor().newInstance();
-            module = Module.class.cast(moduleObj);
+            module = (Module) moduleObj;
         } catch (Exception e) {
-            logger.log(Level.WARNING, "Intantiating `Module` class for " + moduleClass + " threw:", e);
+            logger.log(Level.WARNING, "Instantiating `Module` class for " + moduleClass + " threw:", e);
             return null;
         }
 
@@ -381,11 +373,11 @@ final class ClientManager {
     }
 
     private static Map<File, Module> moduleMapFromClassMap(
-            Map<File, Class> classMap, File serverConfigFile, Client client)
+            Map<File, Class<?>> classMap, File serverConfigFile, Client client)
     {
-        Map<File, Module> moduleMap = new HashMap<File, Module>();
+        Map<File, Module> moduleMap = new HashMap<>();
 
-        for (Map.Entry<File, Class> classEntry: classMap.entrySet()) {
+        for (Map.Entry<File, Class<?>> classEntry: classMap.entrySet()) {
             File moduleFile = classEntry.getKey();
             Class<?> moduleClass = classEntry.getValue();
 
@@ -406,25 +398,21 @@ final class ClientManager {
     private static void parseArgs(String[] args) {
         for (int i = 0; i < args.length; i++) {
             switch (args[i]) {
-
-                case SERVER_CONFIG_DIR_OPT:
+                case SERVER_CONFIG_DIR_OPT -> {
                     serverConfigDir = new File(args[i + 1]);
                     i++;
-                    break;
-
-                case MODULE_DIR_OPT:
+                }
+                case MODULE_DIR_OPT -> {
                     moduleDir = new File(args[i + 1]);
                     i++;
-                    break;
-
-                case VERBOSE_OPT:
+                }
+                case VERBOSE_OPT -> {
                     Properties p = new Properties();
-                    for (Handler handler: logManager.getLogger("").getHandlers()) {
+                    for (Handler handler : logManager.getLogger("").getHandlers()) {
                         p.setProperty(handler.getClass().getName() + ".level", "FINEST");
                     }
                     p.setProperty(".level", "FINEST");
                     p.setProperty("handlers", logManager.getProperty("handlers"));
-
                     try {
                         ByteArrayOutputStream s = new ByteArrayOutputStream();
                         p.store(s, "");
@@ -433,9 +421,8 @@ final class ClientManager {
                     } catch (IOException e) {
                         throw new RuntimeException(e);
                     }
-
                     setLogFormatter();
-                    break;
+                }
             }
         }
     }
@@ -468,8 +455,8 @@ final class ClientManager {
     private static Set<File> getFilesWithExtensionFromDir(File dir, String ext) {
         Set<File> files = new HashSet<>();
 
-        try {
-            Files.walk(dir.toPath(), FileVisitOption.FOLLOW_LINKS).forEach(path -> {
+        try (Stream<Path> paths = Files.walk(dir.toPath(), FileVisitOption.FOLLOW_LINKS)) {
+            paths.forEach(path -> {
                 String fileName = path.getFileName().toString();
                 if (fileName.endsWith(MODULE_EXTENSION)) {
                     files.add(path.toFile());
@@ -498,12 +485,12 @@ final class ClientManager {
     private static Set<File> getChangedFiles(
             Set<File> newFiles, Set<File> oldFiles)
     {
-        Set<File> union = new HashSet<File>();
+        Set<File> union = new HashSet<>();
         union.addAll(newFiles);
         union.addAll(oldFiles);
 
         // Files which are absent from at least one set
-        Set<File> symmetricDifference = new HashSet<File>();
+        Set<File> symmetricDifference = new HashSet<>();
         for (File file: union) {
             if (!newFiles.contains(file) || !oldFiles.contains(file)) {
                 symmetricDifference.add(file);
@@ -511,7 +498,7 @@ final class ClientManager {
         }
 
         // Files which are present in both sets
-        Set<File> intersection = new HashSet<File>();
+        Set<File> intersection = new HashSet<>();
         for (File file: union) {
             if (newFiles.contains(file) && oldFiles.contains(file)) {
                 intersection.add(file);
@@ -519,14 +506,14 @@ final class ClientManager {
         }
 
         // Files are modified if their modified time has changed
-        Set<File> modified = new HashSet<File>();
+        Set<File> modified = new HashSet<>();
         for (File file: intersection) {
             if (file.lastModified() != lastModifiedTimes.get(file)) {
                 modified.add(file);
             }
         }
 
-        Set<File> changedFiles = new HashSet<File>();
+        Set<File> changedFiles = new HashSet<>();
         changedFiles.addAll(symmetricDifference);
         changedFiles.addAll(modified);
         return changedFiles;
@@ -576,15 +563,14 @@ final class ClientManager {
                         // ClassLoader. If this is the case, we just skip
                         // trying to load the class.
                         try {
-                            Class moduleClass = Class.forName(
+                            Class<?> moduleClass = Class.forName(
                                     className, true, classLoader);
 
                             if (Module.class.isAssignableFrom(moduleClass)) {
                                 moduleClasses.put(changedModuleFile, moduleClass);
                                 break;
                             }
-                        } catch (NoClassDefFoundError e) {
-                        } catch (ClassNotFoundException e) {}
+                        } catch (NoClassDefFoundError | ClassNotFoundException ignored) {}
                     }
                 }
             } catch (IOException e) {

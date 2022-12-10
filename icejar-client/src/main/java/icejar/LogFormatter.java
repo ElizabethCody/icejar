@@ -7,9 +7,9 @@ import java.text.SimpleDateFormat;
 
 
 final class LogFormatter extends Formatter {
-    Date date = new Date();
-    SimpleDateFormat d = new SimpleDateFormat("[dd MMM yyyy hh:mm:ss zzz] ");
-    StringBuilder s = new StringBuilder();
+    final Date date = new Date();
+    final SimpleDateFormat d = new SimpleDateFormat("[dd MMM yyyy hh:mm:ss zzz] ");
+    final StringBuilder s = new StringBuilder();
 
     public String format(LogRecord record) {
         s.setLength(0);
