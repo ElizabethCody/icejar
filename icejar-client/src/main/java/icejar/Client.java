@@ -63,6 +63,8 @@ final class Client {
         if (communicator == null || communicator.isShutdown()) {
             Properties properties = Util.createProperties();
             properties.setProperty("Ice.ImplicitContext", "Shared");
+            properties.setProperty("Ice.ThreadPool.Client.SizeMax", "1");
+            properties.setProperty("Ice.ThreadPool.Server.SizeMax", "1");
 
             InitializationData initData = new InitializationData();
             initData.properties = properties;
