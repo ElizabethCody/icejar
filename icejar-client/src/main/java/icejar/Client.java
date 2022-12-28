@@ -162,8 +162,7 @@ final class Client {
         // old Ice module with a build of icejar which uses the new module or
         // vice-versa, the call to `MetaPrx.checkedCast` will return `null`.
 
-        String adapterString = String.format("tcp -h %s", iceHost);
-        adapter = communicator.createObjectAdapterWithEndpoints("Client.Callback", adapterString);
+        adapter = communicator.createObjectAdapterWithEndpoints("Callback.Client", "tcp -h 127.0.0.1");
         adapter.activate();
 
         // Set Active Connection Management (ACM) parameters
