@@ -24,14 +24,32 @@ import java.nio.file.WatchKey;
 import java.nio.file.Path;
 import static java.nio.file.StandardWatchEventKinds.*;
 import java.nio.file.FileSystems;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
 import com.moandjiezana.toml.Toml;
 
+
+/*
+ * This is the main class that wrangles all the """resources""" used by the
+ * program.
+ *
+ * Resources need to be initialized when:
+ * - A client is re-configured (server configuration file changes)
+ * - Module jar files change
+ * 
+ * Resources need to be cleaned up when:
+ * - A client gets removed/disabled
+ * - A previously enabled module is no longer enabled for a client
+ * - The program gets shut down
+ */
 
 final class ClientManager {
     // Define accepted command line options
     private static final String SERVER_CONFIG_DIR_OPT = "-s";
     private static final String MODULE_DIR_OPT = "-m";
+    private static final String DB_DIR_OPT = "-d";
     private static final String VERBOSE_OPT = "-v";
 
     private static final String SERVER_CONFIG_EXTENSION = ".toml";
@@ -54,6 +72,7 @@ final class ClientManager {
     // Directories from which ClientManager reads files
     private static File serverConfigDir = new File("servers");
     private static File moduleDir = new File("modules");
+    private static File dbDir = new File("data");
 
     // Logger names
     private static final String BASE_LOGGER = "icejar";
@@ -67,6 +86,10 @@ final class ClientManager {
 
     // Map config files to Client objects
     private static final Map<File, Client> clientMap = new HashMap<>();
+
+    // Map db files to db Connections. These are kept track of so we can make
+    // sure there is only ever 1 open connection to each database file.
+    private static final Map<File, Connection> connectionMap = new HashMap<>();
 
     private static LogManager logManager;
     private static Logger logger;
@@ -223,12 +246,17 @@ final class ClientManager {
                     Map<File, Module> enabledModules = moduleMapFromClassMap(
                             enabledModuleClasses, changedServerConfigFile, client);
 
-                    // Clean up message passing queues & receivers for modules
-                    // which are no longer enabled.
+                    // Clean up message passing and database connections for
+                    // modules which are no longer enabled.
                     for (File previouslyEnabledModule: client.getEnabledModules()) {
                         if (!enabledModules.containsKey(previouslyEnabledModule)) {
+                            // clean up message passing
                             String moduleName = moduleFileName(previouslyEnabledModule);
                             MessagePasser.removeModule(serverName, moduleName);
+                            // clean up database connection
+                            closeDatabaseConnection(
+                                    changedServerConfigFile,
+                                    previouslyEnabledModule);
                         }
                     }
 
@@ -238,7 +266,6 @@ final class ClientManager {
                             callbackHost, callbackPort,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
-                    e.printStackTrace();
                     logger.log(Level.WARNING, "Parsing `" + changedServerConfigFile + "` threw: " + e.getMessage());
                 }
             } else {
@@ -291,6 +318,9 @@ final class ClientManager {
             Map<File, Module> modulesToReload = new HashMap<>();
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
+                    // Clean up previous database connection
+                    closeDatabaseConnection(serverConfigFile, changedModuleFile);
+
                     // Clean up message passing queues & receivers from
                     // previous instance
                     String moduleName = moduleFileName(changedModuleFile);
@@ -309,6 +339,7 @@ final class ClientManager {
         }
     }
 
+    // Remove a client and drop all resources related to that client
     private static void removeClient(File configFile) {
         MessagePasser.removeServer(serverConfigFileName(configFile));
 
@@ -316,7 +347,42 @@ final class ClientManager {
             Client client = clientMap.get(configFile);
             client.cleanup();
             clientMap.remove(configFile);
+
+            for (File moduleFile: client.getEnabledModules()) {
+                closeDatabaseConnection(configFile, moduleFile);
+            }
         }
+    }
+
+    private static void closeDatabaseConnection(File configFile, File moduleFile) {
+        File dbFile = getDatabaseFile(configFile, moduleFile);
+
+        Connection c = connectionMap.get(dbFile);
+
+        if (c != null) {
+            try {
+                c.commit();
+                c.close();
+            } catch (SQLException ignored) {}
+        }
+
+        connectionMap.remove(dbFile);
+    }
+
+    private static Connection openDatabaseConnection(
+            File configFile, File moduleFile) throws SQLException
+    {
+        closeDatabaseConnection(configFile, moduleFile);
+
+        File dbFile = getDatabaseFile(configFile, moduleFile);
+        new File(dbFile.getParent()).mkdirs();
+
+        String connString = "jdbc:sqlite:" + dbFile;
+        Connection c = DriverManager.getConnection(connString);
+
+        connectionMap.put(dbFile, c);
+
+        return c;
     }
 
     private static String stripPrefixAndSuffix(
@@ -381,6 +447,13 @@ final class ClientManager {
 
         module.setupMessagePassing(coordinator);
 
+        try {
+            Connection c = openDatabaseConnection(serverConfigFile, moduleFile);
+            module.setDatabaseConnection(c);
+        } catch (SQLException e) {
+            logger.log(Level.WARNING, "Opening database connection for " + moduleClass + " failed.");
+        }
+
         return module;
     }
 
@@ -416,6 +489,10 @@ final class ClientManager {
                 }
                 case MODULE_DIR_OPT -> {
                     moduleDir = new File(args[i + 1]);
+                    i++;
+                }
+                case DB_DIR_OPT -> {
+                    dbDir = new File(args[i + 1]);
                     i++;
                 }
                 case VERBOSE_OPT -> {
@@ -479,6 +556,14 @@ final class ClientManager {
         }
 
         return files;
+    }
+
+    private static File getDatabaseFile(
+            File serverConfigFile, File moduleFile)
+    {
+        return new File(
+                dbDir + "/" + serverConfigFileName(serverConfigFile) + "/"
+                + moduleFileName(moduleFile) + "/" + "db.sqlite");
     }
 
 
@@ -597,8 +682,9 @@ final class ClientManager {
     }
 
     private static void cleanupClients() {
-        for (Client client: clientMap.values()) {
-            client.cleanup();
+        Set<File> files = new HashSet<>(clientMap.keySet());
+        for (File file: files) {
+            removeClient(file);
         }
     }
 }

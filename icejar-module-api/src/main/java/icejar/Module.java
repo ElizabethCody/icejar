@@ -2,6 +2,7 @@ package icejar;
 
 import java.util.Map;
 import java.util.logging.Logger;
+import java.sql.Connection;
 
 import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
@@ -84,4 +85,26 @@ public interface Module {
      * @see MessagePassing
      */
     default void setupMessagePassing(MessagePassing.Coordinator coordinator) {}
+
+    /**
+     * Receive database connection for this module.
+     * <p>
+     * This method is only called once. It is called immediately after the
+     * Module is instantiated, before any call to <code>setup()</code> or
+     * <code>cleanup()</code>, and after the call to
+     * <code>setupMessagePassing()</code>.
+     * <p>
+     * This method <i>will not</i> be called if opening the database connection
+     * threw an execption.
+     * <p>
+     * The database connection will be closed automatically when the Module
+     * is un-loaded.
+     *
+     * @param c The database connection.
+     */
+    default void setDatabaseConnection(Connection c) {
+        try {
+            c.close();
+        } catch (Exception ignored) {}
+    }
 }

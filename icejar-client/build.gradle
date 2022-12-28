@@ -9,6 +9,7 @@ repositories {
 dependencies {
     implementation 'com.zeroc:ice:3.7.8'
     implementation 'com.moandjiezana.toml:toml4j:0.7.2'
+    implementation 'org.xerial:sqlite-jdbc:3.40.0.0'
 
     implementation project(':ice-generated')
     implementation project(':icejar-module-api')

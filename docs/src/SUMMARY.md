@@ -12,4 +12,5 @@
     - [Step 4: Custom Configuration](./writing_modules/config.md)
     - [Step 5: Logging](./writing_modules/logging.md)
     - [Complete Source Code](./writing_modules/complete.md)
+    - [SQLite Storage](./writing_modules/sqlite.md)
 - [Example Modules](./example_modules.md)

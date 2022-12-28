@@ -40,6 +40,7 @@ Before running Icejar, create a directory which contains the following:
 
 * A sub-directory named `servers`.
 * A sub-directory named `modules`.
+* A sub-directory named `data`.
 * `MumbleIce.jar` (see [Building](building.md))
 
 Icejar can connect to multiple Mumble servers. The details of a connection to a
