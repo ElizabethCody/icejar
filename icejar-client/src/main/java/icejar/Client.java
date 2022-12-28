@@ -162,7 +162,7 @@ final class Client {
         // old Ice module with a build of icejar which uses the new module or
         // vice-versa, the call to `MetaPrx.checkedCast` will return `null`.
 
-        adapter = communicator.createObjectAdapterWithEndpoints("");
+        adapter = communicator.createObjectAdapter("");
 
         // Set Active Connection Management (ACM) parameters
         meta.ice_getConnection().setACM(
