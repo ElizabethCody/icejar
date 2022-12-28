@@ -221,6 +221,10 @@ final class Client {
         } else {
             this.server = null;
         }
+
+        if (this.server != null) {
+            this.server.ice_getConnection().setAdapter(adapter);
+        }
     }
 
     synchronized void reloadModules(Map<File, Module> changedModules) {
