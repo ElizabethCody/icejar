@@ -44,7 +44,6 @@ final class ClientManager {
     private static final String ICE_HOST_VAR = "ice_host";
     private static final String ICE_PORT_VAR = "ice_port";
     private static final String ICE_SECRET_VAR = "ice_secret";
-    // TODO: document CALLBACK_* vars
     private static final String CALLBACK_HOST_VAR = "callback_host";
     private static final String CALLBACK_PORT_VAR = "callback_port";
     private static final String ENABLED_MODULES_VAR = "enabled_modules";

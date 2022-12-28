@@ -52,7 +52,15 @@ The following keys are used and should be placed in a table called `[server]`:
   `ice_secret` can be left undefined. See the
   [Mumble wiki](https://wiki.mumble.info/wiki/Murmur.ini#icesecretread_and_icesecretwrite)
   for more information.
-  
+
+* `callback_host`: The hostname or IP address at which Icejar can be reached
+  over TCP. This should only be set if icejar is running on a different
+  computer than the Mumble server.
+
+* `callback_port`: The port at which Icejar can be reached over TCP. This
+  should only be set if icejar is running on a different computer than the
+  Mumble server.
+
 * `enabled_modules`: List of module names to enable for this connection. The
   names should be the file names of modules without their extension, i.e. to
   enable the module found at `./modules/foo.jar`, you would add `"foo"` to the
