@@ -164,8 +164,6 @@ final class Client {
 
         adapter = communicator.createObjectAdapter("");
 
-        meta.ice_getConnection().setAdapter(adapter);
-
         // Set Active Connection Management (ACM) parameters
         meta.ice_getConnection().setACM(
                 OptionalInt.of(120),
@@ -220,10 +218,6 @@ final class Client {
             }
         } else {
             this.server = null;
-        }
-
-        if (this.server != null) {
-            this.server.ice_getConnection().setAdapter(adapter);
         }
     }
 
