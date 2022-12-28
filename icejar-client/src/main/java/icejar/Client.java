@@ -28,6 +28,8 @@ final class Client {
     private String[] iceArgs;
     private String iceHost;
     private int icePort;
+    private String callbackHost;
+    private int callbackPort;
 
     private String serverName;
     private Long serverID;
@@ -49,11 +51,14 @@ final class Client {
 
     synchronized void reconfigure(
             String[] iceArgs, String iceHost, int icePort, String iceSecret,
+            String callbackHost, int callbackPort,
             Map<File, Module> enabledModules, String serverName, Long serverID,
             Toml config) {
         this.iceArgs = iceArgs;
         this.iceHost = iceHost;
         this.icePort = icePort;
+        this.callbackHost = callbackHost;
+        this.callbackPort = callbackPort;
 
         this.serverName = serverName;
         this.serverID = serverID;
@@ -162,7 +167,12 @@ final class Client {
         // old Ice module with a build of icejar which uses the new module or
         // vice-versa, the call to `MetaPrx.checkedCast` will return `null`.
 
-        adapter = communicator.createObjectAdapter("");
+        String adapterString = String.format("tcp -h %s", callbackHost);
+        if (callbackPort >= 0) {
+            adapterString += String.format(" -p %d", callbackPort);
+        }
+        adapter = communicator.createObjectAdapterWithEndpoints("Callback.Client", adapterString);
+        adapter.activate();
 
         // Set Active Connection Management (ACM) parameters
         meta.ice_getConnection().setACM(

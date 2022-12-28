@@ -44,6 +44,9 @@ final class ClientManager {
     private static final String ICE_HOST_VAR = "ice_host";
     private static final String ICE_PORT_VAR = "ice_port";
     private static final String ICE_SECRET_VAR = "ice_secret";
+    // TODO: document CALLBACK_* vars
+    private static final String CALLBACK_HOST_VAR = "callback_host";
+    private static final String CALLBACK_PORT_VAR = "callback_port";
     private static final String ENABLED_MODULES_VAR = "enabled_modules";
     private static final String SERVER_NAME_VAR = "server_name";
     private static final String SERVER_ID_VAR = "server_id";
@@ -170,6 +173,15 @@ final class ClientManager {
                         .orElse(6502L)
                         .intValue();
 
+                    String callbackHost = Optional.ofNullable(
+                            serverConfig.getString(CALLBACK_HOST_VAR))
+                        .orElse("127.0.0.1");
+
+                    int callbackPort = Optional.ofNullable(
+                            serverConfig.getLong(CALLBACK_PORT_VAR))
+                        .orElse(-1L)
+                        .intValue();
+
                     List<String> enabledModuleNames = Optional.ofNullable(
                             serverConfig.getList(ENABLED_MODULES_VAR, new ArrayList<String>()))
                         .orElse(new ArrayList<>());
@@ -224,6 +236,7 @@ final class ClientManager {
 
                     client.reconfigure(
                             iceArgs, iceHost, icePort, iceSecret,
+                            callbackHost, callbackPort,
                             enabledModules, serverName, serverID, config);
                 } catch (Exception e) {
                     e.printStackTrace();
