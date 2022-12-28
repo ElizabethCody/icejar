@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 ```
 
 Next, implement the
-[`setLogger`](../module-api/icejar/Module.html#setLogger(java.util.logging.Logger))
+[`setLogger`](../../module-api/icejar/Module.html#setLogger(java.util.logging.Logger))
 method for `Module`:
 
 ```java

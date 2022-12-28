@@ -3,7 +3,7 @@
 Often, you'll want to make some values in your module modifiable by its users
 without having to edit the source code and re-compile.
 
-First, import the [`ConfigHelper`](../module-api/icejar/ConfigHelper.html)
+First, import the [`ConfigHelper`](../../module-api/icejar/ConfigHelper.html)
 utility class:
 
 ```java
@@ -22,7 +22,7 @@ public static record Config(String beforeMessage, String afterMessage) {}
 ```
 
 We can now add a call to the
-[`parseConfig`](../module-api/icejar/ConfigHelper.html#parseConfig(java.util.Map,java.lang.Class))
+[`parseConfig`](../../module-api/icejar/ConfigHelper.html#parseConfig(java.util.Map,java.lang.Class))
 helper method to the body of the `setup` method in `Module`:
 
 ```java

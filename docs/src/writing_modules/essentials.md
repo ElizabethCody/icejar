@@ -51,14 +51,14 @@ The arguments to the `setup` method are the following:
 * `cfg` - A mapping from configuration option names to their values. The
   configuration for each module is read from the server and passed in to the
   relevant module by Icejar.
-* [`meta`](../ice-generated/MumbleServer/MetaPrx.html) - Provides access to global Mumble server functionality, such as
+* [`meta`](../../ice-generated/MumbleServer/MetaPrx.html) - Provides access to global Mumble server functionality, such as
   getting the version number of the Mumble server, getting its current uptime,
   or reading values from the Mumble server INI configuration file. It also
   facilitates control of the Mumble server's
   [virtual servers feature](https://wiki.mumble.info/wiki/FAQ/English#Can_I_run_multiple_servers_on_one_host.3F).
 * [`adapter`](https://doc.zeroc.com/api/ice/3.7/java/com/zeroc/Ice/ObjectAdapter.html) - This is provided to allow creating new objects which communicate
   with the Mumble server over Ice. It is mainly needed to create callbacks.
-* [`server`](../ice-generated/MumbleServer/ServerPrx.html) - Provides access to the specific virtual server for which the
+* [`server`](../../ice-generated/MumbleServer/ServerPrx.html) - Provides access to the specific virtual server for which the
   module was instanced. This can be used to send messages to the server,
   access/modify user data, modify channels, etc.
 

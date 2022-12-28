@@ -5,7 +5,7 @@ To demonstrate this feature in this tutorial, message passing will be used to
 send a message from `demo_module` to itself. This is redundant, but will show
 how to properly use the message passing API.
 
-First, import the [`MessagePassing`](../module-api/icejar/MessagePassing.html)
+First, import the [`MessagePassing`](../../module-api/icejar/MessagePassing.html)
 utility class:
 
 ```java
@@ -46,10 +46,10 @@ public void echoTextMessage(TextMessage message) {
 }
 ```
 
-The [`TextMessage`](../ice-generated/MumbleServer/TextMessage.html) object
+The [`TextMessage`](../../ice-generated/MumbleServer/TextMessage.html) object
 stores not only the contents of the message, but its destination as well. Using
 the
-[`sendMessageSameDestination`](../module-api/icejar/IceHelper.html#sendMessageSameDestination(MumbleServer.ServerPrx,MumbleServer.TextMessage,java.lang.String))
+[`sendMessageSameDestination`](../../module-api/icejar/IceHelper.html#sendMessageSameDestination(MumbleServer.ServerPrx,MumbleServer.TextMessage,java.lang.String))
 helper method, we can send the `message.text` String to the same destination as
 `message`.
 
@@ -61,7 +61,7 @@ messages are received by the `Callback` class. We will use message passing to
 send instances of `TextMessage` from `Callback` to `Module`.
 
 To get access to Icejar's message passing features, we implement the
-[`setupMessagePassing`](../module-api/icejar/Module.html#setupMessagePassing(icejar.MessagePassing.Coordinator))
+[`setupMessagePassing`](../../module-api/icejar/Module.html#setupMessagePassing(icejar.MessagePassing.Coordinator))
 method for `Module`.
 
 Add the following method to the `Module` class:
@@ -81,11 +81,11 @@ Additionally, add `sender` as an instance variable of `Module` like so:
 private Sender<TextMessage> sender;
 ```
 
-The [`Coordinator`](../module-api/icejar/MessagePassing.Coordinator.html)
+The [`Coordinator`](../../module-api/icejar/MessagePassing.Coordinator.html)
 object allows the creation of
-[`Senders`](../module-api/icejar/MessagePassing.Sender.html)
+[`Senders`](../../module-api/icejar/MessagePassing.Sender.html)
 and
-[`Receivers`](../module-api/icejar/MessagePassing.Receiver.html)
+[`Receivers`](../../module-api/icejar/MessagePassing.Receiver.html)
 for the current module.
 
 `Receivers` implicity receive messages for the current module and are created
