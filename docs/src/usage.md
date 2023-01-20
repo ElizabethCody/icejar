@@ -50,6 +50,7 @@ For example: create a file called `my_server.toml` in the `servers`
 sub-directory with the following contents:
 
 ```toml
+[server]
 ice_host = "127.0.0.1"
 ice_port = 6502
 ice_secret = "YOUR-SECRET"
