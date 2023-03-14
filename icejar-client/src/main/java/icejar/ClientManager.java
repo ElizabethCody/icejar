@@ -250,13 +250,9 @@ final class ClientManager {
                     // modules which are no longer enabled.
                     for (File previouslyEnabledModule: client.getEnabledModules()) {
                         if (!enabledModules.containsKey(previouslyEnabledModule)) {
-                            // clean up message passing
-                            String moduleName = moduleFileName(previouslyEnabledModule);
-                            MessagePasser.removeModule(serverName, moduleName);
-                            // clean up database connection
-                            closeDatabaseConnection(
-                                    changedServerConfigFile,
-                                    previouslyEnabledModule);
+                            removeModule(
+                                    previouslyEnabledModule,
+                                    changedServerConfigFile);
                         }
                     }
 
@@ -318,13 +314,7 @@ final class ClientManager {
             Map<File, Module> modulesToReload = new HashMap<>();
             for (File changedModuleFile: changedModuleFiles) {
                 if (client.hasModuleFile(changedModuleFile)) {
-                    // Clean up previous database connection
-                    closeDatabaseConnection(serverConfigFile, changedModuleFile);
-
-                    // Clean up message passing queues & receivers from
-                    // previous instance
-                    String moduleName = moduleFileName(changedModuleFile);
-                    MessagePasser.removeModule(serverName, moduleName);
+                    removeModule(changedModuleFile, serverConfigFile);
 
                     Class<?> moduleClass = moduleClasses.get(changedModuleFile);
                     Module module = instanceModuleClass(
@@ -354,8 +344,21 @@ final class ClientManager {
         }
     }
 
-    private static void closeDatabaseConnection(File configFile, File moduleFile) {
-        File dbFile = getDatabaseFile(configFile, moduleFile);
+    // Remove/close resources associated with a module instance for a particular
+    // server, i.e. for a specific instance of a loaded module class
+    private static void removeModule(File moduleFile, File serverConfigFile) {
+        String moduleName = moduleFileName(moduleFile);
+        String serverName = serverConfigFileName(serverConfigFile);
+
+        MessagePasser.removeModule(serverName, moduleName);
+
+        closeDatabaseConnection(serverConfigFile, moduleFile);
+    }
+
+    private static void closeDatabaseConnection(
+            File serverConfigFile, File moduleFile)
+    {
+        File dbFile = getDatabaseFile(serverConfigFile, moduleFile);
 
         Connection c = connectionMap.get(dbFile);
 
@@ -370,11 +373,11 @@ final class ClientManager {
     }
 
     private static Connection openDatabaseConnection(
-            File configFile, File moduleFile) throws SQLException
+            File serverConfigFile, File moduleFile) throws SQLException
     {
-        closeDatabaseConnection(configFile, moduleFile);
+        closeDatabaseConnection(serverConfigFile, moduleFile);
 
-        File dbFile = getDatabaseFile(configFile, moduleFile);
+        File dbFile = getDatabaseFile(serverConfigFile, moduleFile);
         new File(dbFile.getParent()).mkdirs();
 
         String connString = "jdbc:sqlite:" + dbFile;
@@ -496,12 +499,18 @@ final class ClientManager {
                     i++;
                 }
                 case VERBOSE_OPT -> {
+                    // Set the log level for loggers descending from the base
+                    // logger (icejar.*) to FINEST
+
                     Properties p = new Properties();
                     for (Handler handler : logManager.getLogger("").getHandlers()) {
                         p.setProperty(handler.getClass().getName() + ".level", "FINEST");
                     }
-                    p.setProperty(".level", "FINEST");
+                    p.setProperty(BASE_LOGGER + ".level", "FINEST");
                     p.setProperty("handlers", logManager.getProperty("handlers"));
+
+                    // Write the properties to a byte array and read them into
+                    // the LogManager
                     try {
                         ByteArrayOutputStream s = new ByteArrayOutputStream();
                         p.store(s, "");
