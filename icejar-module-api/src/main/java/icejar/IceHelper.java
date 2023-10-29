@@ -1,5 +1,6 @@
 package icejar;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
@@ -234,5 +235,38 @@ public final class IceHelper {
         usersInChannel.entrySet().removeIf(e -> !groupUserIDs.contains(e.getValue().userid));
 
         return usersInChannel;
+    }
+
+    /**
+     * Return the set of channel IDs currently linked to the channel with the
+     * given ID.
+     *
+     * @param server The interface to the Mumble server
+     * @param channel The ID of the channel whose links will be returned
+     *
+     * @return A set of channel IDs that are linked to the channel with the
+     * given ID.
+     */
+    public static Set<Integer> getLinkedChannels(
+            ServerPrx server, int channel) throws Exception
+    {
+        int[] channels = { channel };
+        Set<Integer> linkedChannels = new HashSet<>();
+        recurseLinkedChannels(server, channels, linkedChannels);
+        return Collections.unmodifiableSet(linkedChannels);
+    }
+
+    private static void recurseLinkedChannels(
+            ServerPrx server, int[] channels, Set<Integer> linkedChannels)
+            throws Exception
+    {
+        for (int channel: channels) {
+            if (!linkedChannels.contains(channel)) {
+                linkedChannels.add(channel);
+                recurseLinkedChannels(
+                        server, server.getChannelState(channel).links,
+                        linkedChannels);
+            }
+        }
     }
 }
