@@ -8,7 +8,12 @@ import java.util.HashSet;
 import com.zeroc.Ice.ObjectAdapter;
 import MumbleServer.*;
 
-/** Helper methods for using Ice features. */
+/**
+ * Helper methods for using Ice features.
+ *
+ * Use <code>import static icejar.IceHelper.*;</code> to make the helper methods
+ * easily available to your module.
+ */
 public final class IceHelper {
     private IceHelper() {}
 
