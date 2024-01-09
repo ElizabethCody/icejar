@@ -676,7 +676,7 @@ final class ClientManager {
                                 moduleClasses.put(changedModuleFile, moduleClass);
                                 break;
                             }
-                        } catch (NoClassDefFoundError | ClassNotFoundException ignored) {}
+                        } catch (Exception ignored) {}
                     }
                 }
             } catch (IOException e) {
