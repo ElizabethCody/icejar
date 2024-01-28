@@ -166,10 +166,7 @@ final class ClientManager {
                 try {
                     // Read configuration
                     Toml config = new Toml();
-
-                    try (InputStream overrides = readServerConfig(changedServerConfigFile)) {
-                        config.read(overrides);
-                    }
+                    readServerConfig(changedServerConfigFile, config);
 
                     Toml serverConfig = config.getTable(SERVER_TABLE_NAME);
 
@@ -271,26 +268,20 @@ final class ClientManager {
         }
     }
 
-    private static InputStream readServerConfig(File serverConfigFile) throws Exception {
+    private static void readServerConfig(File serverConfigFile, Toml config) throws Exception {
         if (serverConfigFile.isDirectory()) {
-            ArrayList<InputStream> streams = new ArrayList<>();
-
             for (File subFile: Objects.requireNonNull(serverConfigFile.listFiles())) {
-                InputStream s = readServerConfig(subFile);
-
-                if (s != null) {
-                    streams.add(s);
-                }
+                readServerConfig(subFile, config);
             }
-
-            return new SequenceInputStream(Collections.enumeration(streams));
         } else if (
                 serverConfigFile.isFile()
                 && serverConfigFile.getName().endsWith(SERVER_CONFIG_EXTENSION))
         {
-            return new FileInputStream(serverConfigFile);
-        } else {
-            return null;
+            try {
+                config.read(serverConfigFile);
+            } catch (Exception e) {
+                throw new Exception(serverConfigFile + ": " + e.getMessage());
+            }
         }
     }
 
