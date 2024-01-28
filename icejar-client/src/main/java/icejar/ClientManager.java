@@ -165,8 +165,7 @@ final class ClientManager {
             if (changedServerConfigFile.exists()) {
                 try {
                     // Read configuration
-                    Toml config = new Toml();
-                    readServerConfig(changedServerConfigFile, config);
+                    Toml config = readServerConfig(changedServerConfigFile);
 
                     Toml serverConfig = config.getTable(SERVER_TABLE_NAME);
 
@@ -268,10 +267,11 @@ final class ClientManager {
         }
     }
 
-    private static void readServerConfig(File serverConfigFile, Toml config) throws Exception {
+    private static Toml readServerConfig(File serverConfigFile) throws Exception {
+        Toml config = new Toml();
         if (serverConfigFile.isDirectory()) {
             for (File subFile: Objects.requireNonNull(serverConfigFile.listFiles())) {
-                readServerConfig(subFile, config);
+                config = new Toml(config).read(readServerConfig(subFile));
             }
         } else if (
                 serverConfigFile.isFile()
@@ -283,6 +283,7 @@ final class ClientManager {
                 throw new Exception(serverConfigFile + ": " + e.getMessage());
             }
         }
+        return config;
     }
 
     private static void updateModules() {
