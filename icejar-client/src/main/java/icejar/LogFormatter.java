@@ -2,31 +2,20 @@ package icejar;
 
 import java.util.logging.Formatter;
 import java.util.logging.LogRecord;
-import java.util.Date;
-import java.text.SimpleDateFormat;
-
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 
 final class LogFormatter extends Formatter {
-    final Date date = new Date();
-    final SimpleDateFormat d = new SimpleDateFormat("[dd MMM yyyy hh:mm:ss zzz] ");
-    final StringBuilder s = new StringBuilder();
+    private static final DateTimeFormatter FORMAT = DateTimeFormatter.ofPattern("'['dd MMM yyyy hh:mm:ss zzz']' ")
+                                                                     .withZone(ZoneId.systemDefault());
 
+    @Override
     public String format(LogRecord record) {
-        s.setLength(0);
+        final var timestamp = FORMAT.format(record.getInstant());
+        final var level = record.getLevel();
+        final var logger = record.getLoggerName();
+        final var message = record.getMessage();
 
-        date.setTime(record.getMillis());
-        s.append(d.format(date));
-
-        s.append('[');
-        s.append(record.getLevel());
-        s.append("] ");
-
-        s.append(record.getLoggerName());
-        s.append(": ");
-
-        s.append(record.getMessage());
-
-        s.append('\n');
-        return s.toString();
+        return timestamp + "[" + level + "] " + logger + ": " + message + "\n";
     }
 }
